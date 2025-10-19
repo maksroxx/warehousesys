@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/data/models/product_options.dart';
@@ -16,6 +17,7 @@ abstract class IStockRepository {
   Future<List<VariantStock>> getVariantStock(int variantId);
   Future<List<StockMovement>> getVariantMovements(int variantId);
   Future<DocumentDetailsDTO> getDocumentDetails(int documentId);
+  Future<List<DocumentListItem>> getDocuments(DocumentFilter filter);
 
   Future<void> createProductWithVariant({
     required String productName,
@@ -303,4 +305,35 @@ class StockRepository implements IStockRepository {
       rethrow;
     }
   }
+
+  @override
+  @override
+Future<List<DocumentListItem>> getDocuments(DocumentFilter filter) async {
+  try {
+    final queryParameters = <String, dynamic>{
+      'limit': filter.limit,
+      'offset': filter.offset,
+      if (filter.status != null) 'status': filter.status,
+      if (filter.search != null) 'search': filter.search,
+      'types': filter.types,
+      if (filter.dateFrom != null)
+        'date_from': filter.dateFrom!.toUtc().toIso8601String(),
+      if (filter.dateTo != null)
+        'date_to': filter.dateTo!.toUtc().toIso8601String(),
+    };
+
+    final response = await _dio.get(
+      '/stock/documents',
+      queryParameters: queryParameters,
+    );
+
+    if (response.data == null) return [];
+    final List<dynamic> data = response.data;
+    return data.map((json) => DocumentListItem.fromJson(json)).toList();
+  } on DioException catch (e) {
+    print('Error fetching documents: $e');
+    rethrow;
+  }
+}
+
 }

@@ -34,7 +34,7 @@ mixin _$DocumentDetailsDTO {
   @JsonKey(name: 'posted_at')
   DateTime? get postedAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
-  DateTime get createdAt => throw _privateConstructorUsedError; // Добавляем опциональные поля для других типов документов
+  DateTime get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'counterparty_name')
   String? get counterpartyName => throw _privateConstructorUsedError;
 
@@ -301,7 +301,6 @@ class _$DocumentDetailsDTOImpl implements _DocumentDetailsDTO {
   @override
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  // Добавляем опциональные поля для других типов документов
   @override
   @JsonKey(name: 'counterparty_name')
   final String? counterpartyName;
@@ -409,7 +408,7 @@ abstract class _DocumentDetailsDTO implements DocumentDetailsDTO {
   DateTime? get postedAt;
   @override
   @JsonKey(name: 'created_at')
-  DateTime get createdAt; // Добавляем опциональные поля для других типов документов
+  DateTime get createdAt;
   @override
   @JsonKey(name: 'counterparty_name')
   String? get counterpartyName;

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/data/models/item_details.dart';
@@ -10,13 +11,21 @@ import 'package:warehousesys/features/stock/data/repositories/stock_repository.d
 
 part 'stock_providers.freezed.dart';
 
-final dioProvider = Provider<Dio>(
-  (ref) => Dio(BaseOptions(baseUrl: 'http://localhost:8080/api/v1')),
-);
+final dioProvider = Provider<Dio>((ref) {
+  final options = BaseOptions(
+    baseUrl: 'http://localhost:8080/api/v1',
+    listFormat: ListFormat.multi,
+  );
+  return Dio(options);
+});
 
 final stockRepositoryProvider = Provider<IStockRepository>(
   (ref) => StockRepository(ref.watch(dioProvider)),
 );
+
+final documentFilterProvider = StateProvider<DocumentFilter>((ref) {
+  return const DocumentFilter(types: ['OUTCOME', 'INCOME']);
+});
 
 final productsProvider = FutureProvider.autoDispose<List<Product>>((ref) {
   return ref.watch(stockRepositoryProvider).getProducts();
@@ -125,4 +134,64 @@ final inventoryProvider =
   final filter = ref.watch(inventoryFilterProvider);
 
   return InventoryNotifier(stockRepository, filter);
+});
+
+@freezed
+class DocumentListState with _$DocumentListState {
+  const factory DocumentListState({
+    @Default([]) List<DocumentListItem> documents,
+    @Default(true) bool hasMore,
+    Object? error,
+    @Default(false) bool isLoadingFirstPage,
+    @Default(false) bool isLoadingNextPage,
+  }) = _DocumentListState;
+}
+
+class DocumentListNotifier extends StateNotifier<DocumentListState> {
+  final IStockRepository _repository;
+  final Ref _ref;
+
+  DocumentListNotifier(this._repository, this._ref) : super(const DocumentListState()) {
+    fetchFirstPage();
+
+    _ref.listen(documentFilterProvider, (_, __) => fetchFirstPage());
+  }
+
+  Future<void> fetchFirstPage() async {
+    state = const DocumentListState(isLoadingFirstPage: true);
+    final filter = _ref.read(documentFilterProvider);
+    try {
+      final newDocs = await _repository.getDocuments(filter.copyWith(offset: 0));
+      state = DocumentListState(
+        documents: newDocs,
+        hasMore: newDocs.length == filter.limit,
+      );
+    } catch (e) {
+      state = DocumentListState(error: e);
+    }
+  }
+
+  Future<void> fetchNextPage() async {
+    if (state.isLoadingNextPage || !state.hasMore) return;
+    state = state.copyWith(isLoadingNextPage: true, error: null);
+    
+    final filter = _ref.read(documentFilterProvider);
+    final currentOffset = state.documents.length;
+    
+    try {
+      final newDocs = await _repository.getDocuments(filter.copyWith(offset: currentOffset));
+      state = state.copyWith(
+        documents: [...state.documents, ...newDocs],
+        hasMore: newDocs.length == filter.limit,
+        isLoadingNextPage: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingNextPage: false, error: e);
+    }
+  }
+}
+
+final documentsProvider = StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
+  final repository = ref.watch(stockRepositoryProvider);
+  return DocumentListNotifier(repository, ref);
 });
