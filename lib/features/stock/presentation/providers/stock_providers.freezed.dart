@@ -519,3 +519,273 @@ abstract class _DocumentListState implements DocumentListState {
   _$$DocumentListStateImplCopyWith<_$DocumentListStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+/// @nodoc
+mixin _$CounterpartyListState {
+  List<Counterparty> get counterparties => throw _privateConstructorUsedError;
+  bool get hasMore => throw _privateConstructorUsedError;
+  int get offset => throw _privateConstructorUsedError;
+  Object? get error => throw _privateConstructorUsedError;
+  bool get isLoadingFirstPage => throw _privateConstructorUsedError;
+  bool get isLoadingNextPage => throw _privateConstructorUsedError;
+
+  /// Create a copy of CounterpartyListState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $CounterpartyListStateCopyWith<CounterpartyListState> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $CounterpartyListStateCopyWith<$Res> {
+  factory $CounterpartyListStateCopyWith(
+    CounterpartyListState value,
+    $Res Function(CounterpartyListState) then,
+  ) = _$CounterpartyListStateCopyWithImpl<$Res, CounterpartyListState>;
+  @useResult
+  $Res call({
+    List<Counterparty> counterparties,
+    bool hasMore,
+    int offset,
+    Object? error,
+    bool isLoadingFirstPage,
+    bool isLoadingNextPage,
+  });
+}
+
+/// @nodoc
+class _$CounterpartyListStateCopyWithImpl<
+  $Res,
+  $Val extends CounterpartyListState
+>
+    implements $CounterpartyListStateCopyWith<$Res> {
+  _$CounterpartyListStateCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of CounterpartyListState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? counterparties = null,
+    Object? hasMore = null,
+    Object? offset = null,
+    Object? error = freezed,
+    Object? isLoadingFirstPage = null,
+    Object? isLoadingNextPage = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            counterparties: null == counterparties
+                ? _value.counterparties
+                : counterparties // ignore: cast_nullable_to_non_nullable
+                      as List<Counterparty>,
+            hasMore: null == hasMore
+                ? _value.hasMore
+                : hasMore // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            offset: null == offset
+                ? _value.offset
+                : offset // ignore: cast_nullable_to_non_nullable
+                      as int,
+            error: freezed == error ? _value.error : error,
+            isLoadingFirstPage: null == isLoadingFirstPage
+                ? _value.isLoadingFirstPage
+                : isLoadingFirstPage // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isLoadingNextPage: null == isLoadingNextPage
+                ? _value.isLoadingNextPage
+                : isLoadingNextPage // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$CounterpartyListStateImplCopyWith<$Res>
+    implements $CounterpartyListStateCopyWith<$Res> {
+  factory _$$CounterpartyListStateImplCopyWith(
+    _$CounterpartyListStateImpl value,
+    $Res Function(_$CounterpartyListStateImpl) then,
+  ) = __$$CounterpartyListStateImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    List<Counterparty> counterparties,
+    bool hasMore,
+    int offset,
+    Object? error,
+    bool isLoadingFirstPage,
+    bool isLoadingNextPage,
+  });
+}
+
+/// @nodoc
+class __$$CounterpartyListStateImplCopyWithImpl<$Res>
+    extends
+        _$CounterpartyListStateCopyWithImpl<$Res, _$CounterpartyListStateImpl>
+    implements _$$CounterpartyListStateImplCopyWith<$Res> {
+  __$$CounterpartyListStateImplCopyWithImpl(
+    _$CounterpartyListStateImpl _value,
+    $Res Function(_$CounterpartyListStateImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of CounterpartyListState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? counterparties = null,
+    Object? hasMore = null,
+    Object? offset = null,
+    Object? error = freezed,
+    Object? isLoadingFirstPage = null,
+    Object? isLoadingNextPage = null,
+  }) {
+    return _then(
+      _$CounterpartyListStateImpl(
+        counterparties: null == counterparties
+            ? _value._counterparties
+            : counterparties // ignore: cast_nullable_to_non_nullable
+                  as List<Counterparty>,
+        hasMore: null == hasMore
+            ? _value.hasMore
+            : hasMore // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        offset: null == offset
+            ? _value.offset
+            : offset // ignore: cast_nullable_to_non_nullable
+                  as int,
+        error: freezed == error ? _value.error : error,
+        isLoadingFirstPage: null == isLoadingFirstPage
+            ? _value.isLoadingFirstPage
+            : isLoadingFirstPage // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isLoadingNextPage: null == isLoadingNextPage
+            ? _value.isLoadingNextPage
+            : isLoadingNextPage // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+
+class _$CounterpartyListStateImpl implements _CounterpartyListState {
+  const _$CounterpartyListStateImpl({
+    final List<Counterparty> counterparties = const [],
+    this.hasMore = true,
+    this.offset = 0,
+    this.error,
+    this.isLoadingFirstPage = false,
+    this.isLoadingNextPage = false,
+  }) : _counterparties = counterparties;
+
+  final List<Counterparty> _counterparties;
+  @override
+  @JsonKey()
+  List<Counterparty> get counterparties {
+    if (_counterparties is EqualUnmodifiableListView) return _counterparties;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_counterparties);
+  }
+
+  @override
+  @JsonKey()
+  final bool hasMore;
+  @override
+  @JsonKey()
+  final int offset;
+  @override
+  final Object? error;
+  @override
+  @JsonKey()
+  final bool isLoadingFirstPage;
+  @override
+  @JsonKey()
+  final bool isLoadingNextPage;
+
+  @override
+  String toString() {
+    return 'CounterpartyListState(counterparties: $counterparties, hasMore: $hasMore, offset: $offset, error: $error, isLoadingFirstPage: $isLoadingFirstPage, isLoadingNextPage: $isLoadingNextPage)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CounterpartyListStateImpl &&
+            const DeepCollectionEquality().equals(
+              other._counterparties,
+              _counterparties,
+            ) &&
+            (identical(other.hasMore, hasMore) || other.hasMore == hasMore) &&
+            (identical(other.offset, offset) || other.offset == offset) &&
+            const DeepCollectionEquality().equals(other.error, error) &&
+            (identical(other.isLoadingFirstPage, isLoadingFirstPage) ||
+                other.isLoadingFirstPage == isLoadingFirstPage) &&
+            (identical(other.isLoadingNextPage, isLoadingNextPage) ||
+                other.isLoadingNextPage == isLoadingNextPage));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_counterparties),
+    hasMore,
+    offset,
+    const DeepCollectionEquality().hash(error),
+    isLoadingFirstPage,
+    isLoadingNextPage,
+  );
+
+  /// Create a copy of CounterpartyListState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CounterpartyListStateImplCopyWith<_$CounterpartyListStateImpl>
+  get copyWith =>
+      __$$CounterpartyListStateImplCopyWithImpl<_$CounterpartyListStateImpl>(
+        this,
+        _$identity,
+      );
+}
+
+abstract class _CounterpartyListState implements CounterpartyListState {
+  const factory _CounterpartyListState({
+    final List<Counterparty> counterparties,
+    final bool hasMore,
+    final int offset,
+    final Object? error,
+    final bool isLoadingFirstPage,
+    final bool isLoadingNextPage,
+  }) = _$CounterpartyListStateImpl;
+
+  @override
+  List<Counterparty> get counterparties;
+  @override
+  bool get hasMore;
+  @override
+  int get offset;
+  @override
+  Object? get error;
+  @override
+  bool get isLoadingFirstPage;
+  @override
+  bool get isLoadingNextPage;
+
+  /// Create a copy of CounterpartyListState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$CounterpartyListStateImplCopyWith<_$CounterpartyListStateImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}

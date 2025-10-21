@@ -16,10 +16,10 @@ class DocumentListItem with _$DocumentListItem {
     required String status,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @JsonKey(name: 'item_count', defaultValue: 0) required int totalItems,
-     
   }) = _DocumentListItem;
 
-  factory DocumentListItem.fromJson(Map<String, dynamic> json) => _$DocumentListItemFromJson(json);
+  factory DocumentListItem.fromJson(Map<String, dynamic> json) =>
+      _$DocumentListItemFromJson(json);
 }
 
 @freezed

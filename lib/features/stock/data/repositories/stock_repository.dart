@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
@@ -18,6 +19,8 @@ abstract class IStockRepository {
   Future<List<StockMovement>> getVariantMovements(int variantId);
   Future<DocumentDetailsDTO> getDocumentDetails(int documentId);
   Future<List<DocumentListItem>> getDocuments(DocumentFilter filter);
+  Future<List<Counterparty>> getCounterparties(CounterpartyFilter filter);
+  Future<Counterparty> getCounterpartyById(int counterpartyId);
 
   Future<void> createProductWithVariant({
     required String productName,
@@ -27,7 +30,7 @@ abstract class IStockRepository {
     required int unitId,
     required Map<String, String> characteristics,
   });
-  
+
   Future<void> createVariant({
     required int productId,
     required String sku,
@@ -36,6 +39,7 @@ abstract class IStockRepository {
   });
 
   Future<Category> createCategory(String name);
+  Future<Counterparty> createCounterparty(Counterparty counterparty);
 
   Future<void> updateProduct({
     required int productId,
@@ -48,8 +52,10 @@ abstract class IStockRepository {
     required String sku,
     required Map<String, String> characteristics,
   });
+  Future<void> updateCounterparty(Counterparty counterparty);
 
   Future<void> deleteVariant(int variantId);
+  Future<void> deleteCounterparty(int counterpartyId);
 }
 
 class StockRepository implements IStockRepository {
@@ -67,7 +73,10 @@ class StockRepository implements IStockRepository {
         if (filter.categoryId != -1) 'category_id': filter.categoryId,
         if (filter.warehouseId != -1) 'warehouse_id': filter.warehouseId,
       };
-      final response = await _dio.get('/stock/variants', queryParameters: queryParameters);
+      final response = await _dio.get(
+        '/stock/variants',
+        queryParameters: queryParameters,
+      );
       if (response.data == null) return [];
       final List<dynamic> data = response.data;
       return data.map((json) => InventoryItem.fromJson(json)).toList();
@@ -128,7 +137,11 @@ class StockRepository implements IStockRepository {
     try {
       final productResponse = await _dio.post(
         '/stock/products',
-        data: {'name': productName, 'category_id': categoryId, 'description': description,},
+        data: {
+          'name': productName,
+          'category_id': categoryId,
+          'description': description,
+        },
       );
       final newProductId = productResponse.data['id'];
       await createVariant(
@@ -231,10 +244,10 @@ class StockRepository implements IStockRepository {
   @override
   Future<List<StockMovement>> getVariantMovements(int variantId) async {
     try {
-      final response = await _dio.get('/stock/movements', queryParameters: {
-        'variant_id': variantId,
-        'limit': 10,
-      });
+      final response = await _dio.get(
+        '/stock/movements',
+        queryParameters: {'variant_id': variantId, 'limit': 10},
+      );
       if (response.data == null) return [];
       final List<dynamic> data = response.data;
       return data.map((json) => StockMovement.fromJson(json)).toList();
@@ -284,10 +297,7 @@ class StockRepository implements IStockRepository {
     try {
       await _dio.put(
         '/stock/variants/$variantId',
-        data: {
-          'sku': sku,
-          'characteristics': characteristics,
-        },
+        data: {'sku': sku, 'characteristics': characteristics},
       );
     } on DioException catch (e) {
       print('Error updating variant: $e');
@@ -308,32 +318,102 @@ class StockRepository implements IStockRepository {
 
   @override
   @override
-Future<List<DocumentListItem>> getDocuments(DocumentFilter filter) async {
-  try {
-    final queryParameters = <String, dynamic>{
-      'limit': filter.limit,
-      'offset': filter.offset,
-      if (filter.status != null) 'status': filter.status,
-      if (filter.search != null) 'search': filter.search,
-      'types': filter.types,
-      if (filter.dateFrom != null)
-        'date_from': filter.dateFrom!.toUtc().toIso8601String(),
-      if (filter.dateTo != null)
-        'date_to': filter.dateTo!.toUtc().toIso8601String(),
-    };
+  Future<List<DocumentListItem>> getDocuments(DocumentFilter filter) async {
+    try {
+      final queryParameters = <String, dynamic>{
+        'limit': filter.limit,
+        'offset': filter.offset,
+        if (filter.status != null) 'status': filter.status,
+        if (filter.search != null) 'search': filter.search,
+        'types': filter.types,
+        if (filter.dateFrom != null)
+          'date_from': filter.dateFrom!.toUtc().toIso8601String(),
+        if (filter.dateTo != null)
+          'date_to': filter.dateTo!.toUtc().toIso8601String(),
+      };
 
-    final response = await _dio.get(
-      '/stock/documents',
-      queryParameters: queryParameters,
-    );
+      final response = await _dio.get(
+        '/stock/documents',
+        queryParameters: queryParameters,
+      );
 
-    if (response.data == null) return [];
-    final List<dynamic> data = response.data;
-    return data.map((json) => DocumentListItem.fromJson(json)).toList();
-  } on DioException catch (e) {
-    print('Error fetching documents: $e');
-    rethrow;
+      if (response.data == null) return [];
+      final List<dynamic> data = response.data;
+      return data.map((json) => DocumentListItem.fromJson(json)).toList();
+    } on DioException catch (e) {
+      print('Error fetching documents: $e');
+      rethrow;
+    }
   }
-}
 
+  @override
+  Future<List<Counterparty>> getCounterparties(
+    CounterpartyFilter filter,
+  ) async {
+    try {
+      final queryParameters = <String, dynamic>{
+        'limit': filter.limit,
+        'offset': filter.offset,
+        if (filter.search != null && filter.search!.isNotEmpty)
+          'search': filter.search,
+      };
+      final response = await _dio.get(
+        '/stock/counterparties',
+        queryParameters: queryParameters,
+      );
+      if (response.data == null) return [];
+      final List<dynamic> data = response.data;
+      return data.map((json) => Counterparty.fromJson(json)).toList();
+    } on DioException catch (e) {
+      print('Error fetching counterparties: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Counterparty> getCounterpartyById(int counterpartyId) async {
+    try {
+      final response = await _dio.get('/stock/counterparties/$counterpartyId');
+      return Counterparty.fromJson(response.data);
+    } on DioException catch (e) {
+      print('Error fetching counterparty by id: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> updateCounterparty(Counterparty counterparty) async {
+    try {
+      final data = counterparty.toJson();
+      await _dio.put('/stock/counterparties/${counterparty.id}', data: data);
+    } on DioException catch (e) {
+      print('Error updating counterparty: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteCounterparty(int counterpartyId) async {
+    try {
+      await _dio.delete('/stock/counterparties/$counterpartyId');
+    } on DioException catch (e) {
+      print('Error deleting counterparty: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Counterparty> createCounterparty(Counterparty counterparty) async {
+    try {
+      final response = await _dio.post(
+        '/stock/counterparties',
+        data: counterparty.toJson(),
+      );
+      // Возвращаем созданный объект, который пришел от сервера с ID
+      return Counterparty.fromJson(response.data);
+    } on DioException catch (e) {
+      print('Error creating counterparty: $e');
+      rethrow;
+    }
+  }
 }

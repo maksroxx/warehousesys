@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
@@ -39,34 +40,38 @@ final warehousesProvider = FutureProvider.autoDispose<List<Warehouse>>((ref) {
   return ref.watch(stockRepositoryProvider).getWarehouses();
 });
 
-final characteristicTypesProvider = FutureProvider.autoDispose<List<CharacteristicType>>((ref) {
-  return ref.watch(stockRepositoryProvider).getCharacteristicTypes();
-});
+final characteristicTypesProvider =
+    FutureProvider.autoDispose<List<CharacteristicType>>((ref) {
+      return ref.watch(stockRepositoryProvider).getCharacteristicTypes();
+    });
 
-final variantStockProvider = FutureProvider.family.autoDispose<List<VariantStock>, int>((ref, variantId) {
-  return ref.watch(stockRepositoryProvider).getVariantStock(variantId);
-});
+final variantStockProvider = FutureProvider.family
+    .autoDispose<List<VariantStock>, int>((ref, variantId) {
+      return ref.watch(stockRepositoryProvider).getVariantStock(variantId);
+    });
 
-final detailedProductProvider = FutureProvider.family.autoDispose<Product, int>((ref, productId) {
-  return ref.watch(stockRepositoryProvider).getProductById(productId);
-});
+final detailedProductProvider = FutureProvider.family.autoDispose<Product, int>(
+  (ref, productId) {
+    return ref.watch(stockRepositoryProvider).getProductById(productId);
+  },
+);
 
-final variantMovementsProvider = FutureProvider.family.autoDispose<List<StockMovement>, int>((ref, variantId) {
-  return ref.watch(stockRepositoryProvider).getVariantMovements(variantId);
-});
+final variantMovementsProvider = FutureProvider.family
+    .autoDispose<List<StockMovement>, int>((ref, variantId) {
+      return ref.watch(stockRepositoryProvider).getVariantMovements(variantId);
+    });
 
-final documentDetailsProvider = FutureProvider.family.autoDispose<DocumentDetailsDTO, int>((ref, documentId) {
-  return ref.watch(stockRepositoryProvider).getDocumentDetails(documentId);
-});
-final productOptionsProvider = FutureProvider.family.autoDispose<ProductOptionsDTO, int>((ref, productId) {
-  return ref.watch(stockRepositoryProvider).getProductOptions(productId);
-});
+final documentDetailsProvider = FutureProvider.family
+    .autoDispose<DocumentDetailsDTO, int>((ref, documentId) {
+      return ref.watch(stockRepositoryProvider).getDocumentDetails(documentId);
+    });
+final productOptionsProvider = FutureProvider.family
+    .autoDispose<ProductOptionsDTO, int>((ref, productId) {
+      return ref.watch(stockRepositoryProvider).getProductOptions(productId);
+    });
 
 final inventoryFilterProvider = StateProvider<VariantFilter>((ref) {
-  return const VariantFilter(
-    warehouseId: 1,
-    stockStatus: 'all',
-  );
+  return const VariantFilter(warehouseId: 1, stockStatus: 'all');
 });
 
 @freezed
@@ -87,15 +92,17 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
   final int _limit;
 
   InventoryNotifier(this._stockRepository, this._filter)
-      : _limit = _filter.limit,
-        super(const InventoryState()) {
+    : _limit = _filter.limit,
+      super(const InventoryState()) {
     fetchFirstPage();
   }
 
   Future<void> fetchFirstPage() async {
     state = const InventoryState(isLoadingFirstPage: true);
     try {
-      final newItems = await _stockRepository.searchItems(_filter.copyWith(offset: 0));
+      final newItems = await _stockRepository.searchItems(
+        _filter.copyWith(offset: 0),
+      );
       state = InventoryState(
         items: newItems,
         offset: newItems.length,
@@ -111,7 +118,9 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
     state = state.copyWith(isLoadingNextPage: true, error: null);
 
     try {
-      final newItems = await _stockRepository.searchItems(_filter.copyWith(offset: state.offset));
+      final newItems = await _stockRepository.searchItems(
+        _filter.copyWith(offset: state.offset),
+      );
       state = state.copyWith(
         items: [...state.items, ...newItems],
         offset: state.offset + newItems.length,
@@ -130,11 +139,11 @@ class InventoryNotifier extends StateNotifier<InventoryState> {
 
 final inventoryProvider =
     StateNotifierProvider.autoDispose<InventoryNotifier, InventoryState>((ref) {
-  final stockRepository = ref.watch(stockRepositoryProvider);
-  final filter = ref.watch(inventoryFilterProvider);
+      final stockRepository = ref.watch(stockRepositoryProvider);
+      final filter = ref.watch(inventoryFilterProvider);
 
-  return InventoryNotifier(stockRepository, filter);
-});
+      return InventoryNotifier(stockRepository, filter);
+    });
 
 @freezed
 class DocumentListState with _$DocumentListState {
@@ -151,7 +160,8 @@ class DocumentListNotifier extends StateNotifier<DocumentListState> {
   final IStockRepository _repository;
   final Ref _ref;
 
-  DocumentListNotifier(this._repository, this._ref) : super(const DocumentListState()) {
+  DocumentListNotifier(this._repository, this._ref)
+    : super(const DocumentListState()) {
     fetchFirstPage();
 
     _ref.listen(documentFilterProvider, (_, __) => fetchFirstPage());
@@ -161,7 +171,9 @@ class DocumentListNotifier extends StateNotifier<DocumentListState> {
     state = const DocumentListState(isLoadingFirstPage: true);
     final filter = _ref.read(documentFilterProvider);
     try {
-      final newDocs = await _repository.getDocuments(filter.copyWith(offset: 0));
+      final newDocs = await _repository.getDocuments(
+        filter.copyWith(offset: 0),
+      );
       state = DocumentListState(
         documents: newDocs,
         hasMore: newDocs.length == filter.limit,
@@ -174,12 +186,14 @@ class DocumentListNotifier extends StateNotifier<DocumentListState> {
   Future<void> fetchNextPage() async {
     if (state.isLoadingNextPage || !state.hasMore) return;
     state = state.copyWith(isLoadingNextPage: true, error: null);
-    
+
     final filter = _ref.read(documentFilterProvider);
     final currentOffset = state.documents.length;
-    
+
     try {
-      final newDocs = await _repository.getDocuments(filter.copyWith(offset: currentOffset));
+      final newDocs = await _repository.getDocuments(
+        filter.copyWith(offset: currentOffset),
+      );
       state = state.copyWith(
         documents: [...state.documents, ...newDocs],
         hasMore: newDocs.length == filter.limit,
@@ -191,7 +205,88 @@ class DocumentListNotifier extends StateNotifier<DocumentListState> {
   }
 }
 
-final documentsProvider = StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
+final documentsProvider =
+    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((
+      ref,
+    ) {
+      final repository = ref.watch(stockRepositoryProvider);
+      return DocumentListNotifier(repository, ref);
+    });
+
+
+final counterpartyFilterProvider = StateProvider.autoDispose<CounterpartyFilter>(
+  (ref) => const CounterpartyFilter(),
+);
+
+@freezed
+class CounterpartyListState with _$CounterpartyListState {
+  const factory CounterpartyListState({
+    @Default([]) List<Counterparty> counterparties,
+    @Default(true) bool hasMore,
+    @Default(0) int offset,
+    Object? error,
+    @Default(false) bool isLoadingFirstPage,
+    @Default(false) bool isLoadingNextPage,
+  }) = _CounterpartyListState;
+}
+
+class CounterpartyListNotifier extends StateNotifier<CounterpartyListState> {
+  final IStockRepository _repository;
+  final Ref _ref;
+
+  CounterpartyListNotifier(this._repository, this._ref)
+      : super(const CounterpartyListState()) {
+    fetchFirstPage();
+    _ref.listen(counterpartyFilterProvider, (_, __) => fetchFirstPage());
+  }
+
+  Future<void> fetchFirstPage() async {
+    state = const CounterpartyListState(isLoadingFirstPage: true);
+    final filter = _ref.read(counterpartyFilterProvider);
+    try {
+      final newItems = await _repository.getCounterparties(
+        filter.copyWith(offset: 0),
+      );
+      state = CounterpartyListState(
+        counterparties: newItems,
+        offset: newItems.length,
+        hasMore: newItems.length == filter.limit,
+      );
+    } catch (e) {
+      state = CounterpartyListState(error: e);
+    }
+  }
+
+  Future<void> fetchNextPage() async {
+    if (state.isLoadingNextPage || !state.hasMore) return;
+    state = state.copyWith(isLoadingNextPage: true, error: null);
+    
+    final filter = _ref.read(counterpartyFilterProvider);
+    
+    try {
+      final newItems = await _repository.getCounterparties(
+        filter.copyWith(offset: state.offset),
+      );
+      state = state.copyWith(
+        counterparties: [...state.counterparties, ...newItems],
+        offset: state.offset + newItems.length,
+        hasMore: newItems.length == filter.limit,
+        isLoadingNextPage: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingNextPage: false, error: e);
+    }
+  }
+}
+
+final counterpartiesProvider =
+    StateNotifierProvider.autoDispose<CounterpartyListNotifier, CounterpartyListState>(
+        (ref) {
   final repository = ref.watch(stockRepositoryProvider);
-  return DocumentListNotifier(repository, ref);
+  return CounterpartyListNotifier(repository, ref);
+});
+
+final counterpartyDetailsProvider =
+    FutureProvider.family.autoDispose<Counterparty, int>((ref, counterpartyId) {
+  return ref.watch(stockRepositoryProvider).getCounterpartyById(counterpartyId);
 });

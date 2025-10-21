@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/features/home/presentation/side_navigation_bar.dart';
+import 'package:warehousesys/features/stock/presentation/screens/counterparties_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/inventory_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/shipments_screen.dart';
 
@@ -16,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
     Center(child: Text('Orders Page')),    // Индекс 2
     ShipmentsScreen(),                     // Индекс 3
     Center(child: Text('Reports Page')),   // Индекс 4
-    Center(child: Text('Customers Page')), // Индекс 5
+    CounterpartiesScreen(),                // Индекс 5
     Center(child: Text('Settings Page')),  // Индекс 6
   ];
 
