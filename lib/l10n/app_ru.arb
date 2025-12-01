@@ -1,0 +1,9 @@
+{
+    "dashboard": "Обзор",
+    "inventory": "Склад",
+    "orders": "Заказы",
+    "shipments": "Отгрузки",
+    "reports": "Отчеты",
+    "counterparties": "Контрагенты",
+    "settings": "Настройки"
+}

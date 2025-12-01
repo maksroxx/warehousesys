@@ -14,6 +14,7 @@ part 'stock_providers.freezed.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final options = BaseOptions(
+    // baseUrl: 'http://192.168.1.149:8080/api/v1',
     baseUrl: 'http://localhost:8080/api/v1',
     listFormat: ListFormat.multi,
   );
@@ -159,17 +160,18 @@ class DocumentListState with _$DocumentListState {
 class DocumentListNotifier extends StateNotifier<DocumentListState> {
   final IStockRepository _repository;
   final Ref _ref;
+  final StateProvider<DocumentFilter> _filterProvider;
 
-  DocumentListNotifier(this._repository, this._ref)
+  DocumentListNotifier(this._repository, this._ref, this._filterProvider)
     : super(const DocumentListState()) {
     fetchFirstPage();
 
-    _ref.listen(documentFilterProvider, (_, __) => fetchFirstPage());
+    _ref.listen(_filterProvider, (_, __) => fetchFirstPage());
   }
 
   Future<void> fetchFirstPage() async {
     state = const DocumentListState(isLoadingFirstPage: true);
-    final filter = _ref.read(documentFilterProvider);
+    final filter = _ref.read(_filterProvider);
     try {
       final newDocs = await _repository.getDocuments(
         filter.copyWith(offset: 0),
@@ -187,7 +189,7 @@ class DocumentListNotifier extends StateNotifier<DocumentListState> {
     if (state.isLoadingNextPage || !state.hasMore) return;
     state = state.copyWith(isLoadingNextPage: true, error: null);
 
-    final filter = _ref.read(documentFilterProvider);
+    final filter = _ref.read(_filterProvider);
     final currentOffset = state.documents.length;
 
     try {
@@ -206,11 +208,9 @@ class DocumentListNotifier extends StateNotifier<DocumentListState> {
 }
 
 final documentsProvider =
-    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((
-      ref,
-    ) {
+    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
       final repository = ref.watch(stockRepositoryProvider);
-      return DocumentListNotifier(repository, ref);
+      return DocumentListNotifier(repository, ref, documentFilterProvider); 
     });
 
 

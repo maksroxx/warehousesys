@@ -1,9 +1,12 @@
+// lib/features/stock/presentation/widgets/document_preview_dialog.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:intl/intl.dart';
+import 'package:warehousesys/features/stock/presentation/screens/document_details_screen.dart';
 
 class DocumentPreviewDialog extends ConsumerWidget {
   final int documentId;
@@ -23,12 +26,13 @@ class DocumentPreviewDialog extends ConsumerWidget {
       backgroundColor: cardBackgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 672),
+        // ✅ ИЗМЕНЕНИЕ: Убираем ограничение по высоте
+        constraints: const BoxConstraints(maxWidth: 672), 
         child: documentAsync.when(
-          loading: () => const SizedBox(height: 300, child: Center(child: CircularProgressIndicator())),
-          error: (e, s) => SizedBox(height: 300, child: Center(child: Text('Ошибка загрузки документа: $e'))),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, s) => Center(child: Text('Ошибка загрузки документа: $e')),
           data: (doc) => Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min, // Важно, чтобы Flexible работал правильно
             children: [
               _Header(doc: doc),
               Flexible(
@@ -36,7 +40,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                   child: _Body(doc: doc, highlightedVariantId: highlightedVariantId),
                 ),
               ),
-              _Actions(),
+              _Actions(documentId: doc.id),
             ],
           ),
         ),
@@ -105,6 +109,9 @@ class _Body extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
+  final int documentId;
+  const _Actions({required this.documentId});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -119,7 +126,12 @@ class _Actions extends StatelessWidget {
         children: [
           OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Закрыть')),
           const SizedBox(width: 12),
-          FilledButton(onPressed: () {}, child: const Text('Перейти к документу')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+            },
+            child: const Text('Перейти к документу'),
+          ),
         ],
       ),
     );
@@ -140,13 +152,14 @@ class _InfoItem extends StatelessWidget {
   final String label;
   final String? value;
   final Widget? child;
+  final CrossAxisAlignment? alignment;
 
-  const _InfoItem({required this.label, this.value, this.child});
+  const _InfoItem({required this.label, this.value, this.child, this.alignment});
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: alignment ?? CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(color: textGreyColor, fontSize: 13)),
         const SizedBox(height: 4),
@@ -162,46 +175,47 @@ class _InfoGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> infoItems = [
-      _InfoItem(
-        label: 'Дата:',
-        value: DateFormat('dd.MM.yyyy HH:mm').format(doc.createdAt.toLocal()),
-      ),
-      if (doc.warehouseName != null)
-        _InfoItem(label: 'Склад:', value: doc.warehouseName!),
-      if (doc.counterpartyName != null)
-        _InfoItem(label: 'Контрагент:', value: doc.counterpartyName!),
-      _InfoItem(label: 'Статус:', child: _StatusChip(status: doc.status)),
-    ];
-
-    List<Widget> gridRows = [];
-    for (var i = 0; i < infoItems.length; i += 2) {
-      gridRows.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: infoItems[i]),
-              const SizedBox(width: 24),
-              Expanded(
-                child: (i + 1 < infoItems.length) ? infoItems[i + 1] : Container(),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...gridRows,
-        if (doc.comment?.isNotEmpty == true)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   _InfoItem(
+                    label: 'Дата:',
+                    value: DateFormat('dd.MM.yyyy HH:mm').format(doc.createdAt.toLocal()),
+                  ),
+                  const SizedBox(height: 12),
+                  _InfoItem(label: 'Статус:', child: _StatusChip(status: doc.status)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (doc.warehouseName != null)
+                    _InfoItem(label: 'Склад:', value: doc.warehouseName!, alignment: CrossAxisAlignment.end),
+                  const SizedBox(height: 12),
+                   if (doc.counterpartyName != null)
+                    _InfoItem(label: 'Контрагент:', value: doc.counterpartyName!, alignment: CrossAxisAlignment.end),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (doc.comment?.isNotEmpty == true) ...[
+          const SizedBox(height: 12),
           _InfoItem(
             label: 'Комментарий:',
             value: doc.comment!,
           ),
+        ]
       ],
     );
   }
@@ -248,7 +262,6 @@ class _ItemsTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final headerStyle = textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: textHeaderColor, letterSpacing: 0.5);
-    final numberFormat = NumberFormat("#,##0.00", "ru_RU");
 
     return Container(
       decoration: BoxDecoration(
@@ -256,40 +269,52 @@ class _ItemsTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
-      child: DataTable(
-        headingRowColor: WidgetStateProperty.all(tableHeaderColor),
-        headingTextStyle: headerStyle,
-        columns: const [
-          DataColumn(label: Text('#')),
-          DataColumn(label: Text('ТОВАР (SKU)')),
-          DataColumn(label: Text('КОЛ-ВО'), numeric: true),
-          DataColumn(label: Text('ЦЕНА'), numeric: true),
-          DataColumn(label: Text('СУММА'), numeric: true),
+      child: Column(
+        children: [
+          Container(
+            color: tableHeaderColor,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(flex: 1, child: Text('#', style: headerStyle)),
+                Expanded(flex: 6, child: Text('ТОВАР (SKU)', style: headerStyle)),
+                Expanded(flex: 2, child: Text('КОЛ-ВО', style: headerStyle, textAlign: TextAlign.right)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          ...items.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isHighlighted = item.variantId == highlightedVariantId;
+            final qty = double.tryParse(item.quantity) ?? 0;
+            
+            final highlightColor = primaryColor.withOpacity(0.1);
+            final textStyle = isHighlighted 
+                ? const TextStyle(fontWeight: FontWeight.bold, color: primaryColor) 
+                : const TextStyle();
+
+            return Container(
+              color: isHighlighted ? highlightColor : null,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Expanded(flex: 1, child: Text((index + 1).toString(), style: textStyle)),
+                        Expanded(flex: 6, child: Text('${item.productName} (${item.variantSku})', style: textStyle, overflow: TextOverflow.ellipsis)),
+                        Expanded(flex: 2, child: Text(qty.toStringAsFixed(2), style: textStyle, textAlign: TextAlign.right)),
+                      ],
+                    ),
+                  ),
+                  if (index < items.length - 1)
+                    const Divider(height: 1),
+                ],
+              ),
+            );
+          }),
         ],
-        rows: items.asMap().entries.map((entry) {
-          final index = entry.key;
-          final item = entry.value;
-          final isHighlighted = item.variantId == highlightedVariantId;
-          final qty = double.tryParse(item.quantity) ?? 0;
-          final price = double.tryParse(item.price ?? '0') ?? 0;
-          final sum = qty * price;
-
-          final highlightColor = primaryColor.withOpacity(0.1);
-          final textStyle = isHighlighted 
-              ? const TextStyle(fontWeight: FontWeight.bold, color: primaryColor) 
-              : const TextStyle();
-
-          return DataRow(
-            color: isHighlighted ? WidgetStateProperty.all(highlightColor) : null,
-            cells: [
-              DataCell(Text((index + 1).toString(), style: textStyle)),
-              DataCell(Text('${item.productName} (${item.variantSku})', style: textStyle, overflow: TextOverflow.ellipsis)),
-              DataCell(Text(qty.toStringAsFixed(2), style: textStyle)),
-              DataCell(Text(numberFormat.format(price), style: textStyle)),
-              DataCell(Text(numberFormat.format(sum), style: textStyle)),
-            ],
-          );
-        }).toList(),
       ),
     );
   }

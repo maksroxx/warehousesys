@@ -1,13 +1,17 @@
+// lib/features/stock/presentation/screens/item_details_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/item_details.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/add_item_dialog.dart';
-import 'package:warehousesys/features/stock/presentation/widgets/document_preview_dialog.dart';
+import 'package:warehousesys/features/stock/presentation/screens/document_details_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:warehousesys/features/stock/presentation/widgets/document_preview_dialog.dart';
 
 class ItemDetailsScreen extends ConsumerWidget {
   final InventoryItem item;
@@ -15,11 +19,7 @@ class ItemDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. "Слушаем" состояние главного списка инвентаря
     final inventoryState = ref.watch(inventoryProvider);
-
-    // 2. Находим самую свежую версию нашего элемента в обновленном списке.
-    //    Используем исходный 'item' как запасной вариант, если элемент еще не загрузился.
     final updatedItem = inventoryState.items.firstWhere(
       (i) => i.id == item.id,
       orElse: () => item,
@@ -223,7 +223,6 @@ class _RightColumn extends StatelessWidget {
                 error: (e, s) => Center(child: Text('Error: $e')),
                 data: (movements) {
                   if (movements.isEmpty) { return const Center(child: Padding(padding: EdgeInsets.all(24.0), child: Text('No movements found.', style: TextStyle(color: textGreyColor)))); }
-                  // ✅ ИЗМЕНЕНИЕ: Передаем ID текущего товара в таблицу
                   return _MovementHistoryTable(movements: movements, currentVariantId: item.id);
                 }
               );
@@ -359,14 +358,22 @@ class _MovementHistoryTable extends StatelessWidget {
             DataCell(
               TextButton(
                 onPressed: m.documentId != null
-                    ? () {
-                        showDialog(
+                    ? () async { // Make the function async
+                        final bool? navigateToDetails = await showDialog<bool>(
                           context: context,
                           builder: (context) => DocumentPreviewDialog(
                             documentId: m.documentId!,
                             highlightedVariantId: currentVariantId,
                           ),
                         );
+                        // After the dialog is closed, check the result
+                        if (navigateToDetails == true && context.mounted) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => DocumentDetailsScreen(documentId: m.documentId!),
+                            ),
+                          );
+                        }
                       }
                     : null,
                 child: Text(m.documentNumber ?? 'N/A'),

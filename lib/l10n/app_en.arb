@@ -1,0 +1,9 @@
+{
+    "dashboard": "Dashboard",
+    "inventory": "Inventory",
+    "orders": "Orders",
+    "shipments": "Shipments",
+    "reports": "Reports",
+    "counterparties": "Counterparties",
+    "settings": "Settings"
+}

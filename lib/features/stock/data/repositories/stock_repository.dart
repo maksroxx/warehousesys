@@ -56,6 +56,11 @@ abstract class IStockRepository {
 
   Future<void> deleteVariant(int variantId);
   Future<void> deleteCounterparty(int counterpartyId);
+
+  Future<DocumentListItem> createDocument(Map<String, dynamic> data);
+  Future<void> postDocument(int documentId);
+  Future<DocumentListItem> updateDocument(int documentId, Map<String, dynamic> data);
+  Future<void> deleteDocument(int documentId);
 }
 
 class StockRepository implements IStockRepository {
@@ -409,10 +414,51 @@ class StockRepository implements IStockRepository {
         '/stock/counterparties',
         data: counterparty.toJson(),
       );
-      // Возвращаем созданный объект, который пришел от сервера с ID
       return Counterparty.fromJson(response.data);
     } on DioException catch (e) {
       print('Error creating counterparty: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<DocumentListItem> createDocument(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/stock/documents', data: data);
+      return DocumentListItem.fromJson(response.data);
+    } on DioException catch (e) {
+      print('Error creating document: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> postDocument(int documentId) async {
+    try {
+      await _dio.post('/stock/documents/$documentId/post');
+    } on DioException catch (e) {
+      print('Error posting document: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<DocumentListItem> updateDocument(int documentId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/stock/documents/$documentId', data: data);
+      return DocumentListItem.fromJson(response.data);
+    } on DioException catch (e) {
+      print('Error updating document: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteDocument(int documentId) async {
+    try {
+      await _dio.delete('/stock/documents/$documentId');
+    } on DioException catch (e) {
+      print('Error deleting document: $e');
       rethrow;
     }
   }
