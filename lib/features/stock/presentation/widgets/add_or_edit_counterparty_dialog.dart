@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class AddOrEditCounterpartyDialog extends ConsumerStatefulWidget {
   final Counterparty? counterpartyToEdit;
@@ -47,6 +48,8 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
   }
 
   Future<void> _submitForm() async {
+    final l10n = AppLocalizations.of(context)!;
+    
     if (_formKey.currentState?.validate() != true) return;
     
     setState(() => _isLoading = true);
@@ -73,7 +76,9 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Контрагент успешно ${isEditMode ? "обновлен" : "создан"}!'),
+          content: Text(isEditMode 
+              ? l10n.counterpartyUpdatedSuccess 
+              : l10n.counterpartyCreatedSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -89,7 +94,8 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Произошла ошибка: ${e.toString()}'),
+          // Используем общий ключ ошибки, который мы создали ранее
+          content: Text(l10n.generalError(e.toString())), 
           backgroundColor: Colors.red,
         ),
       );
@@ -101,6 +107,8 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
   @override
   Widget build(BuildContext context) {
     final bool isEditMode = widget.counterpartyToEdit != null;
+    final l10n = AppLocalizations.of(context)!;
+
     final baseInputDecoration = InputDecoration(
       filled: true,
       fillColor: Colors.white,
@@ -130,47 +138,47 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isEditMode ? 'Редактировать контрагента' : 'Новый контрагент',
+                          isEditMode ? l10n.editCounterpartyTitle : l10n.newCounterpartyTitle,
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 24),
                         ),
                         const SizedBox(height: 24),
 
                         // --- Поля формы ---
                         _FormEntry(
-                          label: 'Наименование',
+                          label: l10n.nameLabel,
                           isRequired: true,
                           child: TextFormField(
                             controller: _nameController,
-                            decoration: baseInputDecoration.copyWith(hintText: 'ООО "Ромашка" или Иван Иванов'),
-                            validator: (v) => (v?.isEmpty ?? true) ? 'Обязательное поле' : null,
+                            decoration: baseInputDecoration.copyWith(hintText: l10n.nameHint),
+                            validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
                           ),
                         ),
                         _FormEntry(
-                          label: 'Телефон',
+                          label: l10n.phoneLabel,
                           child: TextFormField(
                             controller: _phoneController,
-                            decoration: baseInputDecoration.copyWith(hintText: '+7 (999) 123-45-67'),
+                            decoration: baseInputDecoration.copyWith(hintText: l10n.phoneHint),
                           ),
                         ),
                         _FormEntry(
-                          label: 'Email',
+                          label: l10n.emailLabel,
                           child: TextFormField(
                             controller: _emailController,
-                            decoration: baseInputDecoration.copyWith(hintText: 'contact@example.com'),
+                            decoration: baseInputDecoration.copyWith(hintText: l10n.emailHint),
                           ),
                         ),
                          _FormEntry(
-                          label: 'Telegram',
+                          label: l10n.telegramLabel,
                           child: TextFormField(
                             controller: _telegramController,
-                            decoration: baseInputDecoration.copyWith(hintText: '@username'),
+                            decoration: baseInputDecoration.copyWith(hintText: l10n.telegramHint),
                           ),
                         ),
                         _FormEntry(
-                          label: 'Адрес',
+                          label: l10n.addressLabel,
                           child: TextFormField(
                             controller: _addressController,
-                            decoration: baseInputDecoration.copyWith(hintText: 'Город, улица, дом'),
+                            decoration: baseInputDecoration.copyWith(hintText: l10n.addressHint),
                             maxLines: 2,
                           ),
                         ),
@@ -179,7 +187,7 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
                   ),
                 ),
               ),
-              _buildActionsBar(context),
+              _buildActionsBar(context, l10n),
             ],
           ),
         ),
@@ -187,7 +195,7 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
     );
   }
 
-  Widget _buildActionsBar(BuildContext context) {
+  Widget _buildActionsBar(BuildContext context, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: const BoxDecoration(
@@ -199,18 +207,18 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
         children: [
           OutlinedButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Отмена'),
+            child: Text(l10n.cancel),
           ),
           const SizedBox(width: 16),
           _isLoading
               ? FilledButton.icon(
                   onPressed: null,
                   icon: const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                  label: const Text('Сохранить'),
+                  label: Text(l10n.save),
                 )
               : FilledButton(
                   onPressed: _submitForm,
-                  child: const Text('Сохранить'),
+                  child: Text(l10n.save),
                 ),
         ],
       ),

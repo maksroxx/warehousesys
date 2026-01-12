@@ -1,10 +1,7 @@
-// lib/features/stock/presentation/screens/item_details_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
-import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/item_details.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
@@ -12,6 +9,7 @@ import 'package:warehousesys/features/stock/presentation/widgets/add_item_dialog
 import 'package:warehousesys/features/stock/presentation/screens/document_details_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/document_preview_dialog.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class ItemDetailsScreen extends ConsumerWidget {
   final InventoryItem item;
@@ -67,18 +65,21 @@ class ItemDetailsScreen extends ConsumerWidget {
 class _Header extends ConsumerWidget {
   final InventoryItem item;
   const _Header({required this.item});
+  
   Future<void> _showDeleteConfirmationDialog(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Подтвердите удаление'),
-        content: Text('Вы уверены, что хотите удалить вариант "${item.productName}" (SKU: ${item.sku})? Это действие нельзя будет отменить.'),
+        title: Text(l10n.confirmDeletion),
+        content: Text(l10n.confirmVariantDeletionContent(item.productName, item.sku)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Отмена')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Удалить'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -88,12 +89,12 @@ class _Header extends ConsumerWidget {
       try {
         await ref.read(stockRepositoryProvider).deleteVariant(item.id);
         if (!context.mounted) return; 
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Товар успешно удален'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.itemDeletedSuccess), backgroundColor: Colors.green));
         ref.invalidate(inventoryProvider);
         Navigator.of(context).pop();
       } catch (e) {
         if (!context.mounted) return; 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.deleteError(e)), backgroundColor: Colors.red));
       }
     }
   }
@@ -101,10 +102,12 @@ class _Header extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        IconButton(icon: Icon(PhosphorIconsRegular.arrowLeft), onPressed: () => Navigator.of(context).pop(), tooltip: 'Back to Inventory'),
+        IconButton(icon: Icon(PhosphorIconsRegular.arrowLeft), onPressed: () => Navigator.of(context).pop(), tooltip: l10n.backToInventory),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -121,12 +124,12 @@ class _Header extends ConsumerWidget {
           onPressed: () {
             showDialog(context: context, builder: (context) => AddItemDialog(itemToEdit: item));
           }, 
-          tooltip: 'Edit Item'
+          tooltip: l10n.editItem
         ),
         IconButton(
           icon: Icon(PhosphorIconsRegular.trash, color: Colors.red.shade600), 
           onPressed: () => _showDeleteConfirmationDialog(context, ref),
-          tooltip: 'Delete Item'
+          tooltip: l10n.deleteItem
         ),
       ],
     );
@@ -140,34 +143,36 @@ class _LeftColumn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final productDetailsAsync = ref.watch(detailedProductProvider(item.productId));
+    final l10n = AppLocalizations.of(context)!;
+
     return _InfoCard(
-      title: 'Detailed Information',
+      title: l10n.detailedInformation,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           productDetailsAsync.when(
             loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
-            error: (e, s) => Center(child: Text('Ошибка загрузки описания: $e')),
+            error: (e, s) => Center(child: Text(l10n.errorLoadingDescription(e))),
             data: (product) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (product.description?.isNotEmpty == true) ...[
-                    _SectionHeader('Description'),
+                    _SectionHeader(l10n.description),
                     Text(product.description!, style: const TextStyle(color: textGreyColor, height: 1.5)),
                     const SizedBox(height: 24),
                   ],
-                  _SectionHeader('Attributes'),
-                  _AttributeTableRow('Category', item.categoryName),
+                  _SectionHeader(l10n.attributes),
+                  _AttributeTableRow(l10n.category, item.categoryName),
                   const Divider(height: 24),
-                  _AttributeTableRow('Unit', item.unitName),
+                  _AttributeTableRow(l10n.unit, item.unitName),
                 ],
               );
             },
           ),
           if (item.characteristics != null && item.characteristics!.isNotEmpty) ...[
             const SizedBox(height: 24),
-            _SectionHeader('Characteristics'),
+            _SectionHeader(l10n.characteristics),
             ...item.characteristics!.entries.map((entry) {
               final isLast = entry.key == item.characteristics!.entries.last.key;
               return Column(
@@ -190,20 +195,21 @@ class _RightColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _InfoCard(
-          title: 'Real-time Data',
+          title: l10n.realTimeData,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _SectionHeader('Stock Levels'),
+              _SectionHeader(l10n.stockLevels),
               Consumer(
                 builder: (context, ref, child) {
                   final stockAsync = ref.watch(variantStockProvider(item.id));
                   return stockAsync.when(
                     loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
-                    error: (e, s) => Center(child: Text('Error: $e')),
+                    error: (e, s) => Center(child: Text('${l10n.error}: $e')),
                     data: (stocks) => _StockLevelsTable(stocks: stocks),
                   );
                 },
@@ -213,16 +219,16 @@ class _RightColumn extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         _InfoCard(
-          title: 'Movement History (Last 10)',
+          title: l10n.movementHistory,
           isPadded: false,
           child: Consumer(
             builder: (context, ref, child) {
               final movementsAsync = ref.watch(variantMovementsProvider(item.id));
               return movementsAsync.when(
                 loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
-                error: (e, s) => Center(child: Text('Error: $e')),
+                error: (e, s) => Center(child: Text('${l10n.error}: $e')),
                 data: (movements) {
-                  if (movements.isEmpty) { return const Center(child: Padding(padding: EdgeInsets.all(24.0), child: Text('No movements found.', style: TextStyle(color: textGreyColor)))); }
+                  if (movements.isEmpty) { return Center(child: Padding(padding: const EdgeInsets.all(24.0), child: Text(l10n.noMovementsFound, style: const TextStyle(color: textGreyColor)))); }
                   return _MovementHistoryTable(movements: movements, currentVariantId: item.id);
                 }
               );
@@ -290,6 +296,8 @@ class _StockLevelsTable extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final headerStyle = textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: textHeaderColor);
     final totalStyle = textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold);
+    final l10n = AppLocalizations.of(context)!;
+    
     double totalOnHand = 0, totalReserved = 0, totalAvailable = 0;
     for (var stock in stocks) {
       totalOnHand += double.tryParse(stock.onHand) ?? 0;
@@ -299,10 +307,10 @@ class _StockLevelsTable extends StatelessWidget {
     return DataTable(
       headingRowHeight: 40,
       columns: [
-        DataColumn(label: Text('WAREHOUSE', style: headerStyle)),
-        DataColumn(label: Text('ON HAND', style: headerStyle), numeric: true),
-        DataColumn(label: Text('RESERVED', style: headerStyle), numeric: true),
-        DataColumn(label: Text('AVAILABLE', style: headerStyle), numeric: true),
+        DataColumn(label: Text(l10n.tableWarehouse.toUpperCase(), style: headerStyle)),
+        DataColumn(label: Text(l10n.tableOnHand.toUpperCase(), style: headerStyle), numeric: true),
+        DataColumn(label: Text(l10n.tableReserved.toUpperCase(), style: headerStyle), numeric: true),
+        DataColumn(label: Text(l10n.tableAvailable.toUpperCase(), style: headerStyle), numeric: true),
       ],
       rows: [
         ...stocks.map((stock) => DataRow(
@@ -315,7 +323,7 @@ class _StockLevelsTable extends StatelessWidget {
         )),
         DataRow(
           cells: [
-            DataCell(Text('Total', style: totalStyle)),
+            DataCell(Text(l10n.total, style: totalStyle)),
             DataCell(Text(totalOnHand.toStringAsFixed(2), style: totalStyle)),
             DataCell(Text(totalReserved.toStringAsFixed(2), style: totalStyle)),
             DataCell(Text(totalAvailable.toStringAsFixed(2), style: totalStyle)),
@@ -336,15 +344,16 @@ class _MovementHistoryTable extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final headerStyle = textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: textHeaderColor);
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
+    final l10n = AppLocalizations.of(context)!;
 
     return DataTable(
       headingRowHeight: 40,
       columns: [
-        DataColumn(label: Text('DATE', style: headerStyle)),
-        DataColumn(label: Text('TYPE', style: headerStyle)),
-        DataColumn(label: Text('DOCUMENT', style: headerStyle)),
-        DataColumn(label: Text('WAREHOUSE', style: headerStyle)),
-        DataColumn(label: Text('QUANTITY', style: headerStyle), numeric: true),
+        DataColumn(label: Text(l10n.tableDate.toUpperCase(), style: headerStyle)),
+        DataColumn(label: Text(l10n.tableType.toUpperCase(), style: headerStyle)),
+        DataColumn(label: Text(l10n.tableDocument.toUpperCase(), style: headerStyle)),
+        DataColumn(label: Text(l10n.tableWarehouse.toUpperCase(), style: headerStyle)),
+        DataColumn(label: Text(l10n.tableQuantity.toUpperCase(), style: headerStyle), numeric: true),
       ],
       rows: movements.map((m) {
         final isIncome = m.type == 'INCOME';
@@ -358,7 +367,7 @@ class _MovementHistoryTable extends StatelessWidget {
             DataCell(
               TextButton(
                 onPressed: m.documentId != null
-                    ? () async { // Make the function async
+                    ? () async { 
                         final bool? navigateToDetails = await showDialog<bool>(
                           context: context,
                           builder: (context) => DocumentPreviewDialog(
@@ -366,7 +375,7 @@ class _MovementHistoryTable extends StatelessWidget {
                             highlightedVariantId: currentVariantId,
                           ),
                         );
-                        // After the dialog is closed, check the result
+                        
                         if (navigateToDetails == true && context.mounted) {
                           Navigator.of(context).push(
                             MaterialPageRoute(

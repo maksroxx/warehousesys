@@ -7,6 +7,7 @@ import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class CharacteristicField {
   final TextEditingController keyController = TextEditingController();
@@ -94,16 +95,17 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   }
 
   Future<void> _submitForm() async {
+    final l10n = AppLocalizations.of(context)!;
+    
     if (_formKey.currentState?.validate() != true) return;
     final isEditMode = widget.itemToEdit != null;
+    
     if (!isEditMode &&
         _selectedProduct == null &&
         _nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Введите название нового продукта или выберите существующий',
-          ),
+        SnackBar(
+          content: Text(l10n.enterProductNameError),
           backgroundColor: Colors.red,
         ),
       );
@@ -113,8 +115,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
         _selectedProduct == null &&
         _selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Для нового продукта необходимо выбрать категорию'),
+        SnackBar(
+          content: Text(l10n.selectCategoryError),
           backgroundColor: Colors.red,
         ),
       );
@@ -190,7 +192,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Товар успешно ${isEditMode ? "обновлен" : "добавлен"}!',
+            isEditMode ? l10n.itemUpdatedSuccess : l10n.itemAddedSuccess,
           ),
           backgroundColor: Colors.green,
         ),
@@ -200,23 +202,23 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
 
       Navigator.of(context).pop();
     } on DioException catch (e) {
-      String errorMessage = 'Произошла неизвестная ошибка';
+      String errorMessage = l10n.unknownError;
       if (e.response?.statusCode == 500) {
         final responseData = e.response?.data;
         if (responseData is Map && responseData['error'] is String) {
+          // Оставляем проверку на английском, так как это приходит с бэкенда
           if (responseData['error'].contains(
             'duplicate key value violates unique constraint "idx_variants_sku"',
           )) {
-            errorMessage =
-                'Этот Артикул (SKU) уже существует. Пожалуйста, введите уникальный.';
+            errorMessage = l10n.skuExistsError;
           } else {
             errorMessage = responseData['error'];
           }
         } else {
-          errorMessage = 'Внутренняя ошибка сервера.';
+          errorMessage = l10n.serverError;
         }
       } else {
-        errorMessage = 'Ошибка сети: ${e.message}';
+        errorMessage = l10n.networkError(e.message ?? '');
       }
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
@@ -230,7 +232,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Произошла ошибка: ${e.toString()}'),
+            content: Text(l10n.generalError(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -242,6 +244,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
 
   Future<void> _handleAddNewCategory() async {
     final name = _newCategoryController.text;
+    final l10n = AppLocalizations.of(context)!;
+    
     if (name.isEmpty) return;
     setState(() => _isLoading = true);
     try {
@@ -258,7 +262,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка создания категории: $e'),
+          content: Text(l10n.categoryCreateError(e)),
           backgroundColor: Colors.red,
         ),
       );
@@ -268,6 +272,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   }
 
   Widget _buildSeparator() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Row(
@@ -276,7 +281,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
-              'Or',
+              l10n.orSeparator,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: textGreyColor),
@@ -291,6 +296,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   @override
   Widget build(BuildContext context) {
     final bool isEditMode = widget.itemToEdit != null;
+    final l10n = AppLocalizations.of(context)!;
+
     final baseInputDecoration = InputDecoration(
       filled: true,
       fillColor: Colors.white,
@@ -325,14 +332,14 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isEditMode ? 'Edit Item' : 'Add New Item',
+                          isEditMode ? l10n.editItemDialogTitle : l10n.addNewItemDialogTitle,
                           style: Theme.of(
                             context,
                           ).textTheme.headlineMedium?.copyWith(fontSize: 24),
                         ),
                         const SizedBox(height: 24),
                         if (isEditMode)
-                          _buildEditColumn(context, baseInputDecoration)
+                          _buildEditColumn(context, baseInputDecoration, l10n)
                         else
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,6 +348,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                                 child: _buildProductColumn(
                                   context,
                                   baseInputDecoration,
+                                  l10n,
                                 ),
                               ),
                               const SizedBox(width: 32),
@@ -348,6 +356,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                                 child: _buildVariationColumn(
                                   context,
                                   baseInputDecoration,
+                                  l10n,
                                 ),
                               ),
                             ],
@@ -358,7 +367,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 ),
               ),
             ),
-            _buildActionsBar(context),
+            _buildActionsBar(context, l10n),
           ],
         ),
       ),
@@ -368,6 +377,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   Widget _buildProductColumn(
     BuildContext context,
     InputDecoration baseInputDecoration,
+    AppLocalizations l10n,
   ) {
     final productsAsync = ref.watch(productsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
@@ -376,15 +386,15 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader("Product"),
+        _SectionHeader(l10n.productSection),
         _FormEntry(
-          label: 'Select Existing Product (optional)',
+          label: l10n.selectExistingProduct,
           child: productsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Text('Error: $e'),
+            error: (e, s) => Text('${l10n.error}: $e'),
             data: (products) => DropdownButtonFormField<Product>(
               value: _selectedProduct,
-              hint: const Text('Select a product...'),
+              hint: Text(l10n.selectProductHint),
               isExpanded: true,
               decoration: baseInputDecoration.copyWith(
                 suffixIcon: _selectedProduct != null
@@ -437,18 +447,18 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SectionHeader("Create New Product", isSubHeader: true),
+                _SectionHeader(l10n.createNewProductSection, isSubHeader: true),
                 _FormEntry(
-                  label: 'New Product Name',
+                  label: l10n.newProductName,
                   child: TextFormField(
                     controller: _nameController,
                     decoration: baseInputDecoration.copyWith(
-                      hintText: 'e.g., Super Widget',
+                      hintText: l10n.productNameHint,
                     ),
                   ),
                 ),
                 _FormEntry(
-                  label: 'Category',
+                  label: l10n.categoryLabel,
                   child: _isAddingCategory
                       ? Row(
                           children: [
@@ -456,7 +466,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                               child: TextFormField(
                                 controller: _newCategoryController,
                                 decoration: baseInputDecoration.copyWith(
-                                  hintText: 'New category name',
+                                  hintText: l10n.newCategoryNameHint,
                                 ),
                                 autofocus: true,
                               ),
@@ -476,10 +486,10 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                         )
                       : categoriesAsync.when(
                           loading: () => const SizedBox.shrink(),
-                          error: (e, s) => const Text('Error'),
+                          error: (e, s) => Text(l10n.error),
                           data: (categories) => DropdownButtonFormField<int>(
                             value: _selectedCategoryId,
-                            hint: const Text('Select a category'),
+                            hint: Text(l10n.selectCategoryHint),
                             decoration: baseInputDecoration,
                             onChanged: (value) {
                               if (value == -1) {
@@ -498,13 +508,13 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                                   child: Text(c.name),
                                 ),
                               ),
-                              const DropdownMenuItem<int>(
+                               DropdownMenuItem<int>(
                                 value: -1,
                                 child: Row(
                                   children: [
-                                    Icon(Icons.add, size: 16),
-                                    SizedBox(width: 8),
-                                    Text("Add New..."),
+                                    const Icon(Icons.add, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(l10n.addNewOption),
                                   ],
                                 ),
                               ),
@@ -513,11 +523,11 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                         ),
                 ),
                 _FormEntry(
-                  label: 'Description',
+                  label: l10n.description,
                   child: TextFormField(
                     controller: _descriptionController,
                     decoration: baseInputDecoration.copyWith(
-                      hintText: 'Describe the product',
+                      hintText: l10n.descriptionHint,
                     ),
                     maxLines: 3,
                   ),
@@ -533,25 +543,26 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   Widget _buildVariationColumn(
     BuildContext context,
     InputDecoration baseInputDecoration,
+    AppLocalizations l10n,
   ) {
     final tempProduct = _selectedProduct;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader("Variation"),
+        _SectionHeader(l10n.variationSection),
         _FormEntry(
-          label: 'SKU',
+          label: l10n.tableSku,
           isRequired: true,
           child: TextFormField(
             controller: _skuController,
             decoration: baseInputDecoration.copyWith(
-              hintText: 'e.g., SW-BLUE-LG-01',
+              hintText: l10n.skuHint,
             ),
-            validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+            validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
           ),
         ),
         const SizedBox(height: 24),
-        _SectionHeader("Characteristics", isSubHeader: true),
+        _SectionHeader(l10n.characteristicsSection, isSubHeader: true),
         if (tempProduct != null)
           Consumer(
             builder: (context, ref, child) {
@@ -565,7 +576,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                error: (e, s) => Text('Error: $e'),
+                error: (e, s) => Text('${l10n.error}: $e'),
                 data: (data) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) return;
@@ -581,11 +592,11 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                   });
                   if (data.options.isEmpty &&
                       _customCharacteristicFields.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
-                        'У этого товара еще нет заданных характеристик.',
-                        style: TextStyle(color: textGreyColor),
+                        l10n.noCharacteristicsYet,
+                        style: const TextStyle(color: textGreyColor),
                       ),
                     );
                   }
@@ -596,7 +607,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                             label: option.type,
                             child: TextFormField(
                               decoration: baseInputDecoration.copyWith(
-                                hintText: 'Value for ${option.type}',
+                                hintText: l10n.valueFor(option.type),
                               ),
                               onChanged: (value) => setState(
                                 () =>
@@ -640,7 +651,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             icon: Icon(PhosphorIconsRegular.plus, size: 16),
-            label: const Text('Add New Characteristic'),
+            label: Text(l10n.addNewCharacteristic),
             onPressed: _addCustomCharacteristicField,
           ),
         ),
@@ -651,6 +662,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   Widget _buildEditColumn(
     BuildContext context,
     InputDecoration baseInputDecoration,
+    AppLocalizations l10n,
   ) {
     final itemToEdit = widget.itemToEdit!;
     final tempProduct = Product(
@@ -661,16 +673,16 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader("Product Details"),
+        _SectionHeader(l10n.productDetailsSection),
         _FormEntry(
-          label: 'Product Name',
+          label: l10n.tableItemName,
           child: TextFormField(
             controller: _nameController,
             decoration: baseInputDecoration,
           ),
         ),
         _FormEntry(
-          label: 'Category',
+          label: l10n.categoryLabel,
           child: _isAddingCategory
               ? Row(
                   children: [
@@ -678,7 +690,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                       child: TextFormField(
                         controller: _newCategoryController,
                         decoration: baseInputDecoration.copyWith(
-                          hintText: 'New category name',
+                          hintText: l10n.newCategoryNameHint,
                         ),
                         autofocus: true,
                       ),
@@ -698,10 +710,10 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 )
               : categoriesAsync.when(
                   loading: () => const SizedBox.shrink(),
-                  error: (e, s) => const Text('Error'),
+                  error: (e, s) => Text(l10n.error),
                   data: (categories) => DropdownButtonFormField<int>(
                     value: _selectedCategoryId,
-                    hint: const Text('Select a category'),
+                    hint: Text(l10n.selectCategoryHint),
                     decoration: baseInputDecoration,
                     onChanged: (value) {
                       if (value == -1) {
@@ -720,13 +732,13 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                           child: Text(c.name),
                         ),
                       ),
-                      const DropdownMenuItem<int>(
+                      DropdownMenuItem<int>(
                         value: -1,
                         child: Row(
                           children: [
-                            Icon(Icons.add, size: 16),
-                            SizedBox(width: 8),
-                            Text("Add New..."),
+                            const Icon(Icons.add, size: 16),
+                            const SizedBox(width: 8),
+                            Text(l10n.addNewOption),
                           ],
                         ),
                       ),
@@ -735,7 +747,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 ),
         ),
         _FormEntry(
-          label: 'Description',
+          label: l10n.description,
           child: TextFormField(
             controller: _descriptionController,
             decoration: baseInputDecoration,
@@ -743,20 +755,20 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
           ),
         ),
         const Divider(height: 32),
-        _SectionHeader("Variation Details"),
+        _SectionHeader(l10n.variationDetailsSection),
         _FormEntry(
-          label: 'SKU',
+          label: l10n.tableSku,
           isRequired: true,
           child: TextFormField(
             controller: _skuController,
             decoration: baseInputDecoration.copyWith(
-              hintText: 'e.g., SW-BLUE-LG-01',
+              hintText: l10n.skuHint,
             ),
-            validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+            validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
           ),
         ),
         const SizedBox(height: 24),
-        _SectionHeader("Characteristics", isSubHeader: true),
+        _SectionHeader(l10n.characteristicsSection, isSubHeader: true),
         Consumer(
           builder: (context, ref, child) {
             final optionsAsync = ref.watch(
@@ -769,15 +781,15 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (e, s) => Text('Error: $e'),
+              error: (e, s) => Text('${l10n.error}: $e'),
               data: (data) {
                 if (data.options.isEmpty &&
                     _customCharacteristicFields.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Text(
-                      'У этого товара еще нет заданных характеристик.',
-                      style: TextStyle(color: textGreyColor),
+                      l10n.noCharacteristicsYet,
+                      style: const TextStyle(color: textGreyColor),
                     ),
                   );
                 }
@@ -790,7 +802,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                             initialValue:
                                 _suggestedCharacteristicsValues[option.type],
                             decoration: baseInputDecoration.copyWith(
-                              hintText: 'Value for ${option.type}',
+                              hintText: l10n.valueFor(option.type),
                             ),
                             onChanged: (value) => setState(
                               () =>
@@ -833,7 +845,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             icon: Icon(PhosphorIconsRegular.plus, size: 16),
-            label: const Text('Add New Characteristic'),
+            label: Text(l10n.addNewCharacteristic),
             onPressed: _addCustomCharacteristicField,
           ),
         ),
@@ -841,7 +853,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     );
   }
 
-  Widget _buildActionsBar(BuildContext context) {
+  Widget _buildActionsBar(BuildContext context, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: const BoxDecoration(
@@ -853,7 +865,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
         children: [
           OutlinedButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           const SizedBox(width: 16),
           if (_isLoading)
@@ -866,7 +878,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                   color: Colors.white,
                 ),
               ),
-              label: const Text('Save'),
+              label: Text(l10n.save),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -883,7 +895,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                   vertical: 16,
                 ),
               ),
-              child: const Text('Save'),
+              child: Text(l10n.save),
             ),
         ],
       ),
@@ -972,6 +984,8 @@ class _CharacteristicRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final charTypesAsync = ref.watch(characteristicTypesProvider);
+    final l10n = AppLocalizations.of(context)!;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
@@ -998,7 +1012,7 @@ class _CharacteristicRow extends ConsumerWidget {
                         controller: controller,
                         focusNode: focusNode,
                         decoration: baseInputDecoration.copyWith(
-                          hintText: 'Property',
+                          hintText: l10n.propertyLabel,
                         ),
                         onChanged: (v) => field.keyController.text = v,
                       );
@@ -1006,11 +1020,11 @@ class _CharacteristicRow extends ConsumerWidget {
               ),
               loading: () => TextFormField(
                 controller: field.keyController,
-                decoration: baseInputDecoration.copyWith(hintText: 'Property'),
+                decoration: baseInputDecoration.copyWith(hintText: l10n.propertyLabel),
               ),
               error: (e, s) => TextFormField(
                 controller: field.keyController,
-                decoration: baseInputDecoration.copyWith(hintText: 'Error'),
+                decoration: baseInputDecoration.copyWith(hintText: l10n.error),
               ),
             ),
           ),
@@ -1018,7 +1032,7 @@ class _CharacteristicRow extends ConsumerWidget {
           Expanded(
             child: TextFormField(
               controller: field.valueController,
-              decoration: baseInputDecoration.copyWith(hintText: 'Value'),
+              decoration: baseInputDecoration.copyWith(hintText: l10n.valueLabel),
             ),
           ),
           if (canBeRemoved)
@@ -1030,7 +1044,8 @@ class _CharacteristicRow extends ConsumerWidget {
               hoverColor: Colors.red.withAlpha(20),
               highlightColor: Colors.red.withAlpha(40),
               onPressed: onRemove,
-              tooltip: 'Remove characteristic',
+              // К сожалению, тултип жестко задан в ARB, для "Remove" можно использовать deleteItem или создать новый ключ
+              tooltip: l10n.deleteItem, 
             )
           else
             const SizedBox(width: 48),

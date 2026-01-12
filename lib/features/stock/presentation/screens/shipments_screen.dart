@@ -8,6 +8,7 @@ import 'package:warehousesys/features/stock/presentation/providers/stock_provide
 import 'package:intl/intl.dart';
 import 'package:warehousesys/features/stock/presentation/screens/create_document_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/document_details_screen.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class ShipmentsScreen extends ConsumerStatefulWidget {
   const ShipmentsScreen({super.key});
@@ -44,13 +45,14 @@ class _ShipmentsScreenState extends ConsumerState<ShipmentsScreen> {
   Widget build(BuildContext context) {
     final documentsState = ref.watch(documentsProvider);
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context, textTheme),
+          _buildHeader(context, textTheme, l10n),
           const SizedBox(height: 32),
           TextField(
             onChanged: (value) {
@@ -62,7 +64,7 @@ class _ShipmentsScreenState extends ConsumerState<ShipmentsScreen> {
               });
             },
             decoration: InputDecoration(
-              hintText: 'Search shipments...',
+              hintText: l10n.searchShipmentsHint, // Локализация
               prefixIcon: Icon(
                 PhosphorIconsRegular.magnifyingGlass,
                 color: textGreyColor,
@@ -72,17 +74,18 @@ class _ShipmentsScreenState extends ConsumerState<ShipmentsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          Expanded(child: _buildContent(documentsState)),
+          Expanded(child: _buildContent(documentsState, l10n)),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, TextTheme textTheme) {
+  Widget _buildHeader(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('Shipments', style: textTheme.headlineMedium),
+        // Используем ключ shipments из меню
+        Text(l10n.shipments, style: textTheme.headlineMedium),
         ElevatedButton(
           onPressed: () => _showCreateDocumentDialog(context),
           style: ElevatedButton.styleFrom(
@@ -95,7 +98,7 @@ class _ShipmentsScreenState extends ConsumerState<ShipmentsScreen> {
             elevation: 1,
           ),
           child: Text(
-            'Create Document',
+            l10n.createDocument, // Локализация
             style: textTheme.bodyMedium?.copyWith(color: Colors.white),
           ),
         ),
@@ -103,13 +106,13 @@ class _ShipmentsScreenState extends ConsumerState<ShipmentsScreen> {
     );
   }
 
-  Widget _buildContent(DocumentListState state) {
+  Widget _buildContent(DocumentListState state, AppLocalizations l10n) {
     if (state.isLoadingFirstPage)
       return const Center(child: CircularProgressIndicator());
     if (state.error != null && state.documents.isEmpty)
-      return Center(child: Text('Error: ${state.error}'));
+      return Center(child: Text('${l10n.error}: ${state.error}'));
     if (state.documents.isEmpty)
-      return const Center(child: Text('No shipments found.'));
+      return Center(child: Text(l10n.noShipmentsFound));
 
     return GridView.builder(
       controller: _scrollController,
@@ -142,6 +145,7 @@ class ShipmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final dateFormat = DateFormat('yyyy-MM-dd');
+    final l10n = AppLocalizations.of(context)!;
 
     return InkWell(
       onTap: () {
@@ -179,7 +183,8 @@ class ShipmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Контрагент: ${shipment.counterpartyName ?? 'N/A'}',
+              // Используем ключи, созданные для Orders, чтобы не дублировать
+              l10n.cardCounterparty(shipment.counterpartyName ?? 'N/A'),
               style: textTheme.bodySmall?.copyWith(color: textGreyColor),
               overflow: TextOverflow.ellipsis,
             ),
@@ -188,11 +193,11 @@ class ShipmentCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Отгрузка: ${dateFormat.format(shipment.createdAt.toLocal())}',
+                  l10n.cardCreated(dateFormat.format(shipment.createdAt.toLocal())),
                   style: textTheme.bodySmall?.copyWith(color: textGreyColor),
                 ),
                 Text(
-                  'Позиций: ${shipment.totalItems}',
+                  l10n.cardItems(shipment.totalItems),
                   style: textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -202,9 +207,8 @@ class ShipmentCard extends StatelessWidget {
             const Spacer(),
             Align(
               alignment: Alignment.centerRight,
-              // ✅ ИЗМЕНЕНИЕ: Текст-подсказка вместо кнопки
               child: Text(
-                'View Details →',
+                l10n.viewDetails, // Локализация
                 style: textTheme.bodyMedium?.copyWith(color: primaryColor),
               ),
             ),
@@ -221,6 +225,8 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     Color textColor = textGreyColor;
     Color bgColor = Colors.grey.shade100;
     String text = status;
@@ -228,11 +234,15 @@ class _StatusChip extends StatelessWidget {
     if (status == 'posted') {
       textColor = Colors.green.shade800;
       bgColor = Colors.green.shade100;
-      text = 'Posted';
+      text = l10n.statusPosted;
     } else if (status == 'draft') {
       textColor = Colors.orange.shade800;
       bgColor = Colors.orange.shade100;
-      text = 'Draft';
+      text = l10n.statusDraft;
+    } else if (status == 'canceled') {
+      textColor = Colors.red.shade800;
+      bgColor = Colors.red.shade100;
+      text = l10n.statusCanceled;
     }
 
     return Chip(
@@ -253,15 +263,18 @@ class _StatusChip extends StatelessWidget {
 }
 
 void _showCreateDocumentDialog(BuildContext context) {
+  // Получаем l10n внутри функции диалога через context
+  final l10n = AppLocalizations.of(context)!;
+  
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Create Document'),
-      content: const Text('Choose document type'),
+      title: Text(l10n.createDocument),
+      content: Text(l10n.chooseDocumentType),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -273,7 +286,7 @@ void _showCreateDocumentDialog(BuildContext context) {
               ),
             );
           },
-          child: const Text('Income'),
+          child: Text(l10n.income),
         ),
         FilledButton(
           onPressed: () {
@@ -285,7 +298,7 @@ void _showCreateDocumentDialog(BuildContext context) {
               ),
             );
           },
-          child: const Text('Outcome'),
+          child: Text(l10n.outcome),
         ),
       ],
     ),

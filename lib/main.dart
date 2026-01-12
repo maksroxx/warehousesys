@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/core/theme/app_theme.dart'; 
 import 'package:warehousesys/features/home/presentation/home_screen.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -16,6 +17,9 @@ class MyApp extends StatelessWidget {
       title: 'Warehouse Manager',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const HomeScreen(),
     );
   }

@@ -1,5 +1,3 @@
-// lib/features/stock/presentation/widgets/add_item_from_stock_dialog.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 final _dialogFilterProvider = StateProvider.autoDispose<VariantFilter>((ref) {
   return const VariantFilter();
@@ -70,6 +69,7 @@ class _AddItemFromStockDialogState
   @override
   Widget build(BuildContext context) {
     final inventoryState = ref.watch(_dialogInventoryProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Dialog(
       backgroundColor: cardBackgroundColor,
@@ -86,7 +86,7 @@ class _AddItemFromStockDialogState
               child: Column(
                 children: [
                   Text(
-                    'Select Items from Stock',
+                    l10n.selectItemsFromStock,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 16),
@@ -103,7 +103,7 @@ class _AddItemFromStockDialogState
                       });
                     },
                     decoration: InputDecoration(
-                      hintText: 'Search for items by name or SKU...',
+                      hintText: l10n.searchItemsByNameSku,
                       prefixIcon: Icon(
                         PhosphorIconsRegular.magnifyingGlass,
                         color: textGreyColor,
@@ -122,9 +122,9 @@ class _AddItemFromStockDialogState
               child: inventoryState.isLoadingFirstPage
                   ? const Center(child: CircularProgressIndicator())
                   : inventoryState.error != null
-                  ? Center(child: Text('Error: ${inventoryState.error}'))
+                  ? Center(child: Text('${l10n.error}: ${inventoryState.error}'))
                   : inventoryState.items.isEmpty
-                  ? const Center(child: Text('No items found.'))
+                  ? Center(child: Text(l10n.noItemsFound))
                   : ListView.separated(
                       controller: _scrollController,
                       itemCount:
@@ -155,14 +155,14 @@ class _AddItemFromStockDialogState
                       },
                     ),
             ),
-            _buildActionsBar(context),
+            _buildActionsBar(context, l10n),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionsBar(BuildContext context) {
+  Widget _buildActionsBar(BuildContext context, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: const BoxDecoration(
@@ -174,7 +174,7 @@ class _AddItemFromStockDialogState
         children: [
           OutlinedButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           const SizedBox(width: 16),
           FilledButton.icon(
@@ -186,7 +186,7 @@ class _AddItemFromStockDialogState
             onPressed: _selectedItems.isEmpty
                 ? null
                 : () => Navigator.of(context).pop(_selectedItems.toList()),
-            label: const Text('Add Selected'),
+            label: Text(l10n.addSelected),
           ),
         ],
       ),
@@ -204,6 +204,7 @@ class _HeaderRow extends StatelessWidget {
       color: textHeaderColor,
       letterSpacing: 0.5,
     );
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       color: tableHeaderColor,
@@ -211,10 +212,10 @@ class _HeaderRow extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 40),
-          Expanded(flex: 4, child: Text('PRODUCT NAME', style: headerStyle)),
-          Expanded(flex: 3, child: Text('SKU', style: headerStyle)),
-          Expanded(flex: 2, child: Text('CATEGORY', style: headerStyle)),
-          Expanded(flex: 2, child: Text('IN STOCK', style: headerStyle, textAlign: TextAlign.right)),
+          Expanded(flex: 4, child: Text(l10n.tableItemName.toUpperCase(), style: headerStyle)),
+          Expanded(flex: 3, child: Text(l10n.tableSku.toUpperCase(), style: headerStyle)),
+          Expanded(flex: 2, child: Text(l10n.tableCategory.toUpperCase(), style: headerStyle)),
+          Expanded(flex: 2, child: Text(l10n.tableInStock.toUpperCase(), style: headerStyle, textAlign: TextAlign.right)),
           const SizedBox(width: 16),
         ],
       ),

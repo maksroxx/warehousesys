@@ -1,5 +1,3 @@
-// lib/features/stock/presentation/screens/document_details_screen.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +11,7 @@ import 'package:warehousesys/features/stock/presentation/providers/stock_provide
 import 'package:intl/intl.dart';
 import 'package:warehousesys/features/stock/presentation/screens/create_document_screen.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/add_item_from_stock_dialog.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class DocumentDetailsScreen extends ConsumerStatefulWidget {
   final int documentId;
@@ -155,17 +154,18 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
 
   Future<void> _updateAndSaveChanges(DocumentDetailsDTO doc) async {
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
     try {
       final payload = _buildDocumentPayload(doc);
       await ref.read(stockRepositoryProvider).updateDocument(widget.documentId, payload);
       
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft updated successfully!'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.draftUpdatedSuccess), backgroundColor: Colors.green));
       ref.invalidate(documentsProvider);
       ref.invalidate(documentDetailsProvider(widget.documentId));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating draft: $e'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.draftUpdateError(e)), backgroundColor: Colors.red));
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }
@@ -173,6 +173,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
 
   Future<void> _postDocument() async {
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
     try {
       final payload = _buildDocumentPayload(ref.read(documentDetailsProvider(widget.documentId)).value!);
       await ref.read(stockRepositoryProvider).updateDocument(widget.documentId, payload);
@@ -180,30 +181,31 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
       await ref.read(stockRepositoryProvider).postDocument(widget.documentId);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document posted successfully!'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.documentPostedSuccess), backgroundColor: Colors.green));
       ref.invalidate(documentsProvider);
       ref.invalidate(inventoryProvider);
       ref.invalidate(documentDetailsProvider(widget.documentId));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error posting document: $e'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.postError(e)), backgroundColor: Colors.red));
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _showDeleteConfirmationDialog(DocumentDetailsDTO doc) async {
+    final l10n = AppLocalizations.of(context)!;
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Deletion'),
-        content: Text('Are you sure you want to delete document #${doc.number}? This action cannot be undone.'),
+        title: Text(l10n.confirmDeletion),
+        content: Text(l10n.confirmDocumentDeletionContent(doc.number)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -219,7 +221,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
         Navigator.of(context).pop();
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting document: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.deleteError(e)), backgroundColor: Colors.red));
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
@@ -229,12 +231,15 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final documentAsync = ref.watch(documentDetailsProvider(widget.documentId));
+    // Получаем l10n, но аккуратно, так как внутри when может быть другой контекст, 
+    // поэтому лучше брать здесь, если виджет не перестраивается полностью.
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: backgroundLightColor,
       body: documentAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error loading document:\n$err')),
+        error: (err, stack) => Center(child: Text(l10n.documentLoadingError(err))),
         data: (doc) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && !_isInitialized) {
@@ -252,13 +257,13 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeader(context, doc, isDraft),
+                      _buildHeader(context, doc, isDraft, l10n),
                       const SizedBox(height: 24),
-                      _buildMainInfoSection(context, doc, isDraft),
+                      _buildMainInfoSection(context, doc, isDraft, l10n),
                       const SizedBox(height: 24),
-                      _buildItemsTable(context, isDraft),
+                      _buildItemsTable(context, isDraft, l10n),
                       const SizedBox(height: 24),
-                      _buildFooter(context, doc, isDraft),
+                      _buildFooter(context, doc, isDraft, l10n),
                     ],
                   ),
             ),
@@ -268,8 +273,11 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, DocumentDetailsDTO doc, bool isDraft) {
-    String docTypeName = doc.type == 'INCOME' ? 'Income Document' : 'Outcome Document';
+  Widget _buildHeader(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n) {
+    String docTypeName = doc.type == 'INCOME' ? l10n.incomeDocument : l10n.outcomeDocument;
+    // Локализация статуса
+    String statusText = isDraft ? l10n.statusDraft : l10n.statusPosted;
+
     return Row(
       children: [
         IconButton(
@@ -281,7 +289,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
         Text('$docTypeName #${doc.number}', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(width: 16),
         Chip(
-          label: Text(doc.status.toUpperCase()),
+          label: Text(statusText),
           backgroundColor: doc.status == 'draft' ? Colors.orange.shade100 : Colors.green.shade100,
           labelStyle: TextStyle(
             color: doc.status == 'draft' ? Colors.orange.shade800 : Colors.green.shade800,
@@ -293,14 +301,13 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
           IconButton(
             icon: Icon(PhosphorIconsRegular.trash, color: Colors.red.shade600),
             onPressed: _isLoading ? null : () => _showDeleteConfirmationDialog(doc),
-            tooltip: 'Delete Document',
+            tooltip: l10n.deleteDocumentTooltip,
           )
       ],
     );
   }
 
-  // ✅ ИЗМЕНЕНИЕ: Полная замена на виджет из Create Screen
-  Widget _buildMainInfoSection(BuildContext context, DocumentDetailsDTO doc, bool isDraft) {
+  Widget _buildMainInfoSection(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -323,11 +330,11 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _buildWarehouseDropdown(isDraft),
+                  child: _buildWarehouseDropdown(isDraft, l10n),
                 ),
                 const SizedBox(width: 24),
                 Expanded(
-                  child: _buildCounterpartySearch(isDraft),
+                  child: _buildCounterpartySearch(isDraft, l10n),
                 ),
               ],
             ),
@@ -335,13 +342,13 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text( 'Comment', style: TextStyle( color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
+                 Text(l10n.commentLabel, style: const TextStyle( color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _commentController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Add a comment...',
+                    hintText: l10n.commentHint, // Используем "Добавьте комментарий..." из l10n
                     filled: true,
                     fillColor: isDraft ? Colors.white : backgroundLightColor,
                   ),
@@ -354,16 +361,16 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
 
-  Widget _buildWarehouseDropdown(bool isDraft) {
+  Widget _buildWarehouseDropdown(bool isDraft, AppLocalizations l10n) {
     final warehousesAsync = ref.watch(warehousesProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text( 'Warehouse *', style: TextStyle( color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
+        Text( '${l10n.warehouseLabel} *', style: const TextStyle( color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         warehousesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => const Text('Error loading warehouses'),
+          error: (error, stack) => Text(l10n.errorLoadingWarehouses),
           data: (warehouses) => DropdownButtonFormField<int>(
             value: _selectedWarehouseId,
             items: warehouses.map((warehouse) {
@@ -390,20 +397,20 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
   
-  Widget _buildCounterpartySearch(bool isDraft) {
+  Widget _buildCounterpartySearch(bool isDraft, AppLocalizations l10n) {
     final counterpartiesState = ref.watch(counterpartiesProvider);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Counterparty *', style: TextStyle(color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
+         Text('${l10n.counterpartyLabel} *', style: const TextStyle(color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextFormField(
           controller: _counterpartySearchController,
           focusNode: _counterpartyFocusNode,
           onChanged: _onCounterpartySearchChanged,
           decoration: InputDecoration(
-            hintText: 'Search for a counterparty...',
+            hintText: l10n.searchCounterpartyHint,
             filled: true,
             fillColor: isDraft ? Colors.white : backgroundLightColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -432,13 +439,13 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
               boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 8, offset: const Offset(0, 4))]
             ),
             constraints: const BoxConstraints(maxHeight: 300),
-            child: _buildCounterpartyList(counterpartiesState),
+            child: _buildCounterpartyList(counterpartiesState, l10n),
           ),
       ],
     );
   }
 
-  Widget _buildCounterpartyList(CounterpartyListState state) {
+  Widget _buildCounterpartyList(CounterpartyListState state, AppLocalizations l10n) {
      final scrollController = ScrollController();
     scrollController.addListener(() {
       if (scrollController.position.pixels >= scrollController.position.maxScrollExtent - 50) {
@@ -456,7 +463,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Select Counterparty', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textDarkColor)),
+               Text(l10n.selectCounterparty, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textDarkColor)),
               IconButton(
                 icon: Icon(PhosphorIconsRegular.x, size: 16, color: textGreyColor),
                 onPressed: () {
@@ -473,9 +480,9 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
           child: state.isLoadingFirstPage
               ? const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
               : state.error != null && state.counterparties.isEmpty
-                  ? const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Error loading counterparties')))
+                  ? Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(l10n.errorLoadingCounterparties)))
                   : state.counterparties.isEmpty
-                      ? const Padding(padding: EdgeInsets.all(16), child: Text('No counterparties found'))
+                      ? Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(l10n.noCounterpartiesFound)))
                       : Scrollbar(
                           child: ListView.builder(
                             controller: scrollController,
@@ -511,7 +518,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
 
-  Widget _buildItemsTable(BuildContext context, bool isDraft) {
+  Widget _buildItemsTable(BuildContext context, bool isDraft, AppLocalizations l10n) {
     return Container(
        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       decoration: BoxDecoration(
@@ -521,24 +528,24 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
       ),
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+           Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
             child: Row(
               children: [
-                _TableHeaderCell('№', flex: 1),
-                _TableHeaderCell('ITEM', flex: 4),
-                _TableHeaderCell('SKU', flex: 3),
-                _TableHeaderCell('QUANTITY', flex: 2),
-                _TableHeaderCell('UNIT', flex: 2),
-                _TableHeaderCell('PRICE', flex: 2),
-                _TableHeaderCell('SUM', flex: 2),
-                _TableHeaderCell('', flex: 1),
+                const _TableHeaderCell('№', flex: 1),
+                _TableHeaderCell(l10n.tableItem, flex: 4),
+                _TableHeaderCell(l10n.tableSku, flex: 3),
+                _TableHeaderCell(l10n.tableQuantity, flex: 2),
+                _TableHeaderCell(l10n.tableUnit, flex: 2),
+                _TableHeaderCell(l10n.tablePrice, flex: 2),
+                _TableHeaderCell(l10n.tableSum, flex: 2),
+                const _TableHeaderCell('', flex: 1),
               ],
             ),
           ),
           const Divider(height: 1, color: borderColor),
           if (_items.isEmpty)
-            const Padding(padding: EdgeInsets.symmetric(vertical: 40), child: Text('No items in document'))
+             Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Text(l10n.noItemsInDocument))
           else
             ..._items.asMap().entries.map((entry) {
               final index = entry.key;
@@ -565,7 +572,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                     elevation: 0,
                   ),
                   icon: Icon(PhosphorIconsRegular.listPlus),
-                  label: const Text('Select Items'),
+                  label: Text(l10n.selectItems),
                 ),
               ),
             ),
@@ -574,7 +581,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
 
-  Widget _buildFooter(BuildContext context, DocumentDetailsDTO doc, bool isDraft) {
+  Widget _buildFooter(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n) {
     double totalSum = _items.fold(0, (sum, item) => sum + item.sum);
     final numberFormat = NumberFormat('#,##0.00', 'ru_RU');
     final isOrder = doc.type == 'ORDER';
@@ -589,17 +596,18 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Total Sum: ${numberFormat.format(totalSum)} ₽', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          // "Сумма: 1 200 ₽"
+          Text(l10n.totalSum(numberFormat.format(totalSum)), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           
           if (isDraft)
             // Кнопки для черновика (любого типа)
             Row(
               children: [
-                OutlinedButton(onPressed: _isLoading ? null : () => _updateAndSaveChanges(doc), child: const Text('Save Changes')),
+                OutlinedButton(onPressed: _isLoading ? null : () => _updateAndSaveChanges(doc), child: Text(l10n.saveChanges)),
                 const SizedBox(width: 12),
                 FilledButton.icon(
                   icon: _isLoading ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const SizedBox.shrink(),
-                  label: _isLoading ? const Text('Processing...') : const Text('Post Document'),
+                  label: _isLoading ? Text(l10n.processing) : Text(l10n.postDocument),
                   onPressed: _isLoading ? null : _postDocument,
                 ),
               ],
@@ -617,11 +625,11 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                   ),
                 );
               },
-              child: const Text('Create Shipment'),
+              child: Text(l10n.createShipment),
             )
           else
             // Кнопка для всех остальных проведенных документов
-            OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+            OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.close)),
         ],
       ),
     );

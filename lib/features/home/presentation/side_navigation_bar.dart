@@ -3,15 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/home/presentation/home_screen.dart';
-
-const _navItems = [
-  {'label': 'Dashboard', 'index': 0, 'iconRegular': PhosphorIconsRegular.house, 'iconFill': PhosphorIconsFill.house},
-  {'label': 'Inventory', 'index': 1, 'iconRegular': PhosphorIconsRegular.package, 'iconFill': PhosphorIconsFill.package},
-  {'label': 'Orders', 'index': 2, 'iconRegular': PhosphorIconsRegular.receipt, 'iconFill': PhosphorIconsFill.receipt},
-  {'label': 'Shipments', 'index': 3, 'iconRegular': PhosphorIconsRegular.truck, 'iconFill': PhosphorIconsFill.truck},
-  {'label': 'Reports', 'index': 4, 'iconRegular': PhosphorIconsRegular.chartBar, 'iconFill': PhosphorIconsFill.chartBar},
-  {'label': 'Customers', 'index': 5, 'iconRegular': PhosphorIconsRegular.person, 'iconFill': PhosphorIconsFill.person},
-];
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class SideNavigationBar extends ConsumerWidget {
   const SideNavigationBar({super.key});
@@ -21,6 +13,16 @@ class SideNavigationBar extends ConsumerWidget {
     final selectedIndex = ref.watch(pageProvider);
     final isCollapsed = ref.watch(sideBarCollapsedProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    final navItems = [
+      {'label': l10n.dashboard, 'index': 0, 'iconRegular': PhosphorIconsRegular.house, 'iconFill': PhosphorIconsFill.house},
+      {'label': l10n.inventory, 'index': 1, 'iconRegular': PhosphorIconsRegular.package, 'iconFill': PhosphorIconsFill.package},
+      {'label': l10n.orders, 'index': 2, 'iconRegular': PhosphorIconsRegular.receipt, 'iconFill': PhosphorIconsFill.receipt},
+      {'label': l10n.shipments, 'index': 3, 'iconRegular': PhosphorIconsRegular.truck, 'iconFill': PhosphorIconsFill.truck},
+      {'label': l10n.reports, 'index': 4, 'iconRegular': PhosphorIconsRegular.chartBar, 'iconFill': PhosphorIconsFill.chartBar},
+      {'label': l10n.counterparties, 'index': 5, 'iconRegular': PhosphorIconsRegular.person, 'iconFill': PhosphorIconsFill.person},
+    ];
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -46,7 +48,7 @@ class SideNavigationBar extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Warehouse Manager',
+                              l10n.warehouseManager,
                               style: theme.textTheme.titleLarge,
                               maxLines: 1,
                               softWrap: false,
@@ -65,7 +67,7 @@ class SideNavigationBar extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
-                children: _navItems.map((item) {
+                children: navItems.map((item) {
                   final isSelected = selectedIndex == item['index'];
                   return _NavItem(
                     label: item['label'] as String,
@@ -82,7 +84,7 @@ class SideNavigationBar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: _NavItem(
-              label: 'Settings',
+              label: l10n.settings, // Локализация настроек
               icon: selectedIndex == 6 ? PhosphorIconsFill.gear : PhosphorIconsRegular.gear,
               isSelected: selectedIndex == 6,
               isCollapsed: isCollapsed,
@@ -139,21 +141,27 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-class _CollapseButton extends ConsumerWidget {
+class _CollapseButton extends StatelessWidget {
   final bool isCollapsed;
   const _CollapseButton({required this.isCollapsed});
+  
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return IconButton(
-      icon: Icon(
-        isCollapsed ? PhosphorIconsRegular.sidebarSimple : PhosphorIconsRegular.sidebarSimple,
-        color: textGreyColor, size: 24,
-      ),
-      tooltip: isCollapsed ? 'Развернуть панель' : 'Свернуть панель',
-      hoverColor: Colors.grey.withValues(alpha: 0.15),
-      onPressed: () {
-        ref.read(sideBarCollapsedProvider.notifier).update((state) => !state);
-      },
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final l10n = AppLocalizations.of(context)!;
+        return IconButton(
+          icon: Icon(
+            isCollapsed ? PhosphorIconsRegular.sidebarSimple : PhosphorIconsRegular.sidebarSimple,
+            color: textGreyColor, size: 24,
+          ),
+          tooltip: isCollapsed ? l10n.expandPanel : l10n.collapsePanel,
+          hoverColor: Colors.grey.withValues(alpha: 0.15),
+          onPressed: () {
+            ref.read(sideBarCollapsedProvider.notifier).update((state) => !state);
+          },
+        );
+      }
     );
   }
 }

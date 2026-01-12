@@ -6,6 +6,7 @@ import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/add_or_edit_counterparty_dialog.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class CounterpartiesScreen extends ConsumerStatefulWidget {
   const CounterpartiesScreen({super.key});
@@ -38,17 +39,22 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
   }
 
   Future<void> _showDeleteConfirmationDialog(Counterparty counterparty) async {
+    final l10n = AppLocalizations.of(context)!;
+
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Подтвердите удаление'),
-        content: Text('Вы уверены, что хотите удалить контрагента "${counterparty.name}"? Это действие нельзя будет отменить.'),
+        title: Text(l10n.confirmDeletion),
+        content: Text(l10n.deleteCounterpartyConfirmation(counterparty.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Удалить'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -59,13 +65,13 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
         await ref.read(stockRepositoryProvider).deleteCounterparty(counterparty.id);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Контрагент успешно удален'), backgroundColor: Colors.green),
+          SnackBar(content: Text(l10n.counterpartyDeleted), backgroundColor: Colors.green),
         );
         ref.invalidate(counterpartiesProvider);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка удаления: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(l10n.deleteError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -75,13 +81,14 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
   Widget build(BuildContext context) {
     final counterpartiesState = ref.watch(counterpartiesProvider);
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context, textTheme),
+          _buildHeader(context, textTheme, l10n),
           const SizedBox(height: 32),
           TextField(
             onChanged: (value) {
@@ -91,25 +98,25 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
               });
             },
             decoration: InputDecoration(
-              hintText: 'Search counterparties...',
+              hintText: l10n.searchCounterparties,
               prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass, color: textGreyColor, size: 20),
               fillColor: Theme.of(context).scaffoldBackgroundColor,
             ),
           ),
           const SizedBox(height: 24),
           Expanded(
-            child: _buildContent(counterpartiesState),
+            child: _buildContent(counterpartiesState, l10n),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, TextTheme textTheme) {
+  Widget _buildHeader(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('Customers', style: textTheme.headlineMedium),
+        Text(l10n.counterparties, style: textTheme.headlineMedium),
         ElevatedButton.icon(
           onPressed: () {
             showDialog(
@@ -125,16 +132,16 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             elevation: 1,
           ),
-          label: const Text('Add Counterparty'),
+          label: Text(l10n.addCounterparty),
         ),
       ],
     );
   }
 
-  Widget _buildContent(CounterpartyListState state) {
+  Widget _buildContent(CounterpartyListState state, AppLocalizations l10n) {
     if (state.isLoadingFirstPage) return const Center(child: CircularProgressIndicator());
     if (state.error != null && state.counterparties.isEmpty) return Center(child: Text('Error: ${state.error}'));
-    if (state.counterparties.isEmpty) return const Center(child: Text('No counterparties found.'));
+    if (state.counterparties.isEmpty) return Center(child: Text(l10n.noCounterpartiesFound));
 
     return Container(
       decoration: BoxDecoration(
@@ -145,7 +152,7 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          _buildTableHeader(),
+          _buildTableHeader(l10n),
           const Divider(height: 1, thickness: 1),
           Expanded(
             child: ListView.separated(
@@ -156,7 +163,7 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
                 if (index == state.counterparties.length) {
                   return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()));
                 }
-                return _buildTableRow(state.counterparties[index]);
+                return _buildTableRow(state.counterparties[index], l10n);
               },
             ),
           ),
@@ -165,24 +172,24 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
     );
   }
 
-  Widget _buildTableHeader() {
+  Widget _buildTableHeader(AppLocalizations l10n) {
     return Container(
       color: tableHeaderColor,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
-          _HeaderCell('Name', flex: 2),
-          _HeaderCell('Phone', flex: 2),
-          _HeaderCell('Email', flex: 2),
-          _HeaderCell('Telegramm', flex: 2),
-          _HeaderCell('Address', flex: 3),
-          _HeaderCell('', flex: 1, alignment: TextAlign.center),
+          _HeaderCell(l10n.name, flex: 2),
+          _HeaderCell(l10n.phone, flex: 2),
+          _HeaderCell(l10n.email, flex: 2),
+          _HeaderCell(l10n.telegram, flex: 2),
+          _HeaderCell(l10n.address, flex: 3),
+          const _HeaderCell('', flex: 1, alignment: TextAlign.center),
         ],
       ),
     );
   }
 
-  Widget _buildTableRow(Counterparty item) {
+  Widget _buildTableRow(Counterparty item, AppLocalizations l10n) {
     return InkWell(
       onTap: () {},
       hoverColor: hoverColor,
@@ -209,12 +216,12 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
                         builder: (context) => AddOrEditCounterpartyDialog(counterpartyToEdit: item),
                       );
                     },
-                    tooltip: 'Edit Counterparty',
+                    tooltip: l10n.editCounterparty,
                   ),
                   IconButton(
                     icon: Icon(PhosphorIconsRegular.trash, color: Colors.red.shade600, size: 20),
                     onPressed: () => _showDeleteConfirmationDialog(item),
-                    tooltip: 'Delete Counterparty',
+                    tooltip: l10n.deleteCounterparty,
                   ),
                 ],
               ),
@@ -226,7 +233,6 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
   }
 }
 
-// --- Вспомогательные виджеты ---
 class _HeaderCell extends StatelessWidget {
   final String text;
   final int flex;

@@ -1,5 +1,3 @@
-// lib/features/stock/presentation/screens/orders_screen.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,23 +8,17 @@ import 'package:warehousesys/features/stock/presentation/providers/stock_provide
 import 'package:intl/intl.dart';
 import 'package:warehousesys/features/stock/presentation/screens/create_document_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/document_details_screen.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
-// ✅ ИЗМЕНЕНИЕ: Новый, отдельный провайдер для фильтра заказов
 final orderFilterProvider = StateProvider<DocumentFilter>((ref) {
-  // Фильтруем только по типу ORDER
   return const DocumentFilter(types: ['ORDER']);
 });
 
-// ✅ ИЗМЕНЕНИЕ: Новый провайдер для списка заказов, использующий свой фильтр
 final ordersProvider =
     StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
   final repository = ref.watch(stockRepositoryProvider);
-  // Заменяем глобальный documentFilterProvider на локальный orderFilterProvider
   final filter = ref.watch(orderFilterProvider); 
   
-  // Этот Notifier нужно немного адаптировать, чтобы он принимал фильтр, а не читал его из ref
-  // Пока оставим так, но в идеале DocumentListNotifier не должен зависеть от глобального провайдера
-  // Но для быстрого решения, мы можем переопределить зависимость
   return DocumentListNotifier(repository, ref, orderFilterProvider);
 });
 
@@ -58,36 +50,34 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      // ✅ ИЗМЕНЕНИЕ: Используем новый провайдер
       ref.read(ordersProvider.notifier).fetchNextPage();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ ИЗМЕНЕНИЕ: Используем новый провайдер
     final documentsState = ref.watch(ordersProvider);
     final textTheme = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context, textTheme),
+          _buildHeader(context, textTheme, l10n),
           const SizedBox(height: 32),
           TextField(
             onChanged: (value) {
               if (_debounce?.isActive ?? false) _debounce!.cancel();
               _debounce = Timer(const Duration(milliseconds: 500), () {
-                // ✅ ИЗМЕНЕНИЕ: Используем новый провайдер
                 ref
                     .read(orderFilterProvider.notifier)
                     .update((state) => state.copyWith(search: value));
               });
             },
             decoration: InputDecoration(
-              hintText: 'Search orders...',
+              hintText: l10n.searchOrdersHint, // Локализация
               prefixIcon: Icon(
                 PhosphorIconsRegular.magnifyingGlass,
                 color: textGreyColor,
@@ -97,18 +87,18 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          Expanded(child: _buildContent(documentsState)),
+          Expanded(child: _buildContent(documentsState, l10n)),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, TextTheme textTheme) {
+  Widget _buildHeader(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // ✅ ИЗМЕНЕНИЕ: Заголовок
-        Text('Orders', style: textTheme.headlineMedium),
+        // Используем существующий ключ orders из меню
+        Text(l10n.orders, style: textTheme.headlineMedium),
         ElevatedButton.icon(
           icon: Icon(PhosphorIconsRegular.plus, color: Colors.white),
           onPressed: () => _showCreateOrderDialog(context),
@@ -121,20 +111,19 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
             elevation: 1,
           ),
-          // ✅ ИЗМЕНЕНИЕ: Текст кнопки
-          label: const Text('Create Order'),
+          label: Text(l10n.createOrder), // Локализация
         ),
       ],
     );
   }
 
-  Widget _buildContent(DocumentListState state) {
+  Widget _buildContent(DocumentListState state, AppLocalizations l10n) {
     if (state.isLoadingFirstPage)
       return const Center(child: CircularProgressIndicator());
     if (state.error != null && state.documents.isEmpty)
-      return Center(child: Text('Error: ${state.error}'));
+      return Center(child: Text('${l10n.error}: ${state.error}'));
     if (state.documents.isEmpty)
-      return const Center(child: Text('No orders found.'));
+      return Center(child: Text(l10n.noOrdersFound));
 
     return GridView.builder(
       controller: _scrollController,
@@ -154,14 +143,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
           );
         }
-        // Используем тот же виджет карточки
         return ShipmentCard(shipment: state.documents[index]);
       },
     );
   }
 }
 
-// Виджеты ShipmentCard и _StatusChip можно использовать повторно без изменений
 class ShipmentCard extends StatelessWidget {
   final DocumentListItem shipment;
   const ShipmentCard({super.key, required this.shipment});
@@ -170,6 +157,7 @@ class ShipmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final dateFormat = DateFormat('yyyy-MM-dd');
+    final l10n = AppLocalizations.of(context)!;
 
     return InkWell(
       onTap: () {
@@ -206,7 +194,7 @@ class ShipmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Counterparty: ${shipment.counterpartyName ?? 'N/A'}',
+              l10n.cardCounterparty(shipment.counterpartyName ?? 'N/A'), // Локализация с параметром
               style: textTheme.bodySmall?.copyWith(color: textGreyColor),
               overflow: TextOverflow.ellipsis,
             ),
@@ -215,11 +203,11 @@ class ShipmentCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Created: ${dateFormat.format(shipment.createdAt.toLocal())}',
+                  l10n.cardCreated(dateFormat.format(shipment.createdAt.toLocal())), // Локализация с параметром
                   style: textTheme.bodySmall?.copyWith(color: textGreyColor),
                 ),
                 Text(
-                  'Items: ${shipment.totalItems}',
+                  l10n.cardItems(shipment.totalItems), // Локализация с параметром
                   style: textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -230,7 +218,7 @@ class ShipmentCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'View Details →',
+                l10n.viewDetails, // Локализация
                 style: textTheme.bodyMedium?.copyWith(color: primaryColor),
               ),
             ),
@@ -247,25 +235,28 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     Color textColor = textGreyColor;
     Color bgColor = Colors.grey.shade100;
     String text = status;
 
+    // Локализация статусов
     switch(status) {
       case 'posted':
         textColor = Colors.green.shade800;
         bgColor = Colors.green.shade100;
-        text = 'Posted';
+        text = l10n.statusPosted;
         break;
       case 'draft':
         textColor = Colors.orange.shade800;
         bgColor = Colors.orange.shade100;
-        text = 'Draft';
+        text = l10n.statusDraft;
         break;
       case 'canceled':
         textColor = Colors.red.shade800;
         bgColor = Colors.red.shade100;
-        text = 'Canceled';
+        text = l10n.statusCanceled;
         break;
     }
 
@@ -286,7 +277,6 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-// ✅ ИЗМЕНЕНИЕ: Новый диалог, который создает только ORDER
 void _showCreateOrderDialog(BuildContext context) {
   Navigator.of(context).push(
     MaterialPageRoute(

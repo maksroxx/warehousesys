@@ -11,6 +11,7 @@ import 'package:warehousesys/features/stock/presentation/providers/stock_provide
 import 'package:intl/intl.dart';
 import 'package:warehousesys/features/stock/presentation/screens/orders_screen.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/add_item_from_stock_dialog.dart';
+import 'package:warehousesys/l10n/app_localizations.dart';
 
 class CreateDocumentScreen extends ConsumerStatefulWidget {
   final String documentType;
@@ -52,7 +53,11 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     
     if (widget.baseDocumentId != null) {
       setState(() => _isInitializingFromBase = true);
-      _populateFromBaseDocument(widget.baseDocumentId!);
+      // Запускаем загрузку после построения первого кадра, чтобы был доступен context для локализации (если нужно)
+      // Но так как текст ошибки внутри метода использует context, лучше вызывать так:
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _populateFromBaseDocument(widget.baseDocumentId!);
+      });
     } else {
       _loadDefaultWarehouse();
     }
@@ -63,10 +68,12 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       final baseDoc = await ref.read(stockRepositoryProvider).getDocumentDetails(docId);
       
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       setState(() {
         _selectedWarehouseId = baseDoc.warehouseId;
-        _commentController.text = "Based on document #${baseDoc.number}";
+        // Локализованный комментарий "На основании..."
+        _commentController.text = l10n.basedOnDocument(baseDoc.number);
         
         if (baseDoc.counterpartyName != null) {
           final tempCp = Counterparty(id: 0, name: baseDoc.counterpartyName!);
@@ -93,8 +100,9 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading base document: $e'), backgroundColor: Colors.red));
+      final l10n = AppLocalizations.of(context)!;
       setState(() => _isInitializingFromBase = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorLoadingBaseDocument(e)), backgroundColor: Colors.red));
     }
   }
   
@@ -183,13 +191,14 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
   }
 
   bool _validateForm() {
+    final l10n = AppLocalizations.of(context)!;
     bool isValid = true;
     setState(() {
       _warehouseError =
-          _selectedWarehouseId == null ? 'Please select a warehouse' : null;
+          _selectedWarehouseId == null ? l10n.selectWarehouseError : null;
       _counterpartyError =
-          _selectedCounterparty == null ? 'Please select a counterparty' : null;
-      _itemsError = _items.isEmpty ? 'Please add at least one item' : null;
+          _selectedCounterparty == null ? l10n.selectCounterpartyError : null;
+      _itemsError = _items.isEmpty ? l10n.itemsError : null;
 
       if (_warehouseError != null ||
           _counterpartyError != null ||
@@ -198,7 +207,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       } else {
         for (final item in _items) {
           if (item.quantity <= 0) {
-            _itemsError = 'Quantity must be greater than zero';
+            _itemsError = l10n.quantityError;
             isValid = false;
             break;
           }
@@ -234,6 +243,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     if (!_validateForm()) return;
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
     
     try {
       final payload = _buildDocumentPayload();
@@ -241,8 +251,8 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Document saved successfully as a draft!'),
+        SnackBar(
+          content: Text(l10n.documentSavedDraft),
           backgroundColor: Colors.green,
         ),
       );
@@ -255,7 +265,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
        if (!mounted) return;
        ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving document: $e'),
+          content: Text(l10n.saveError(e)),
           backgroundColor: Colors.red,
         ),
       );
@@ -268,6 +278,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     if (!_validateForm()) return;
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       final payload = _buildDocumentPayload();
@@ -277,8 +288,8 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Document posted successfully!'),
+        SnackBar(
+          content: Text(l10n.documentPostedSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -293,7 +304,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
        if (!mounted) return;
        ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error posting document: $e'),
+          content: Text(l10n.postError(e)),
           backgroundColor: Colors.red,
         ),
       );
@@ -306,16 +317,17 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final double totalSum = _items.fold(0, (sum, item) => sum + item.sum);
+    final l10n = AppLocalizations.of(context)!;
 
     if (_isInitializingFromBase) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading data from base document...'),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(l10n.loadingBaseDocument),
             ],
           ),
         ),
@@ -330,15 +342,15 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context),
+              _buildHeader(context, l10n),
               const SizedBox(height: 24),
-              _buildWarehouseCounterpartySection(context),
+              _buildWarehouseCounterpartySection(context, l10n),
               const SizedBox(height: 24),
-              _buildCommentSection(context),
+              _buildCommentSection(context, l10n),
               const SizedBox(height: 24),
-              _buildItemsTable(context, textTheme),
+              _buildItemsTable(context, textTheme, l10n),
               const SizedBox(height: 24),
-              _buildFooter(context, totalSum),
+              _buildFooter(context, totalSum, l10n),
             ],
           ),
         ),
@@ -346,14 +358,14 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
      return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         IconButton(
           icon: Icon(PhosphorIconsRegular.arrowLeft, size: 24),
           onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Back',
+          tooltip: 'Back', // Можно тоже добавить в локализацию, если критично
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -361,7 +373,9 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.documentType == 'INCOME' ? 'Create Income Document' : 'Create Outcome Document',
+                widget.documentType == 'INCOME' 
+                  ? l10n.createIncomeDocument 
+                  : l10n.createOutcomeDocument,
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
             ],
@@ -371,7 +385,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildWarehouseCounterpartySection(BuildContext context) {
+  Widget _buildWarehouseCounterpartySection(BuildContext context, AppLocalizations l10n) {
     final warehousesAsync = ref.watch(warehousesProvider);
     
     return Container(
@@ -394,11 +408,11 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: _buildWarehouseDropdown(warehousesAsync),
+                child: _buildWarehouseDropdown(warehousesAsync, l10n),
               ),
               const SizedBox(width: 24),
               Expanded(
-                child: _buildCounterpartySearch(),
+                child: _buildCounterpartySearch(l10n),
               ),
             ],
           ),
@@ -407,13 +421,13 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildWarehouseDropdown(AsyncValue<List<Warehouse>> warehousesAsync) {
+  Widget _buildWarehouseDropdown(AsyncValue<List<Warehouse>> warehousesAsync, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Warehouse *',
-          style: TextStyle(
+        Text(
+          '${l10n.warehouseLabel} *',
+          style: const TextStyle(
             color: textDarkColor,
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -437,7 +451,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.red),
             ),
-            child: const Center(child: Text('Error loading warehouses')),
+            child: Center(child: Text(l10n.errorLoadingWarehouses)),
           ),
           data: (warehouses) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,15 +509,15 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildCounterpartySearch() {
+  Widget _buildCounterpartySearch(AppLocalizations l10n) {
     final counterpartiesState = ref.watch(counterpartiesProvider);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Counterparty *',
-          style: TextStyle(
+        Text(
+          '${l10n.counterpartyLabel} *',
+          style: const TextStyle(
             color: textDarkColor,
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -520,7 +534,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
             });
           },
           decoration: InputDecoration(
-            hintText: 'Search for a counterparty...',
+            hintText: l10n.searchCounterpartyHint,
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -577,13 +591,13 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
               ],
             ),
             constraints: const BoxConstraints(maxHeight: 300),
-            child: _buildCounterpartyList(counterpartiesState),
+            child: _buildCounterpartyList(counterpartiesState, l10n),
           ),
       ],
     );
   }
 
-  Widget _buildCounterpartyList(CounterpartyListState state) {
+  Widget _buildCounterpartyList(CounterpartyListState state, AppLocalizations l10n) {
     final scrollController = ScrollController();
 
     scrollController.addListener(() {
@@ -605,9 +619,9 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Select Counterparty',
-                style: TextStyle(
+              Text(
+                l10n.selectCounterparty,
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                   color: textDarkColor,
@@ -634,16 +648,18 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
                   ),
                 )
               : state.error != null && state.counterparties.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('Error loading counterparties'),
+                        padding: const EdgeInsets.all(16),
+                        child: Text(l10n.errorLoadingCounterparties),
                       ),
                     )
                   : state.counterparties.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text('No counterparties found'),
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(l10n.noCounterpartiesFound),
+                          ),
                         )
                       : Scrollbar(
                           child: ListView.builder(
@@ -700,7 +716,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildCommentSection(BuildContext context) {
+  Widget _buildCommentSection(BuildContext context, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -718,9 +734,9 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Comment',
-            style: TextStyle(
+          Text(
+            l10n.commentLabel,
+            style: const TextStyle(
               color: textDarkColor,
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -731,7 +747,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
             controller: _commentController,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'Add a comment, e.g. supplier invoice number',
+              hintText: l10n.commentHint,
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.all(16),
@@ -750,7 +766,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildItemsTable(BuildContext context, TextTheme textTheme) {
+  Widget _buildItemsTable(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       decoration: BoxDecoration(
@@ -767,27 +783,27 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       ),
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
             child: Row(
               children: [
-                _TableHeaderCell('№', flex: 1),
-                _TableHeaderCell('ITEM', flex: 4),
-                _TableHeaderCell('SKU', flex: 3),
-                _TableHeaderCell('QUANTITY', flex: 2),
-                _TableHeaderCell('UNIT', flex: 2),
-                _TableHeaderCell('PRICE', flex: 2),
-                _TableHeaderCell('SUM', flex: 2),
-                _TableHeaderCell('', flex: 1),
+                const _TableHeaderCell('№', flex: 1),
+                _TableHeaderCell(l10n.tableItem, flex: 4),
+                _TableHeaderCell(l10n.tableSku, flex: 3),
+                _TableHeaderCell(l10n.tableQuantity, flex: 2),
+                _TableHeaderCell(l10n.tableUnit, flex: 2),
+                _TableHeaderCell(l10n.tablePrice, flex: 2),
+                _TableHeaderCell(l10n.tableSum, flex: 2),
+                const _TableHeaderCell('', flex: 1),
               ],
             ),
           ),
           const Divider(height: 1, color: borderColor),
           if (_items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: Text('No items added',
-                  style: TextStyle(color: textGreyColor)),
+             Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Text(l10n.noItemsAdded,
+                  style: const TextStyle(color: textGreyColor)),
             )
           else
             ..._items.asMap().entries.map((entry) {
@@ -814,7 +830,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
                       borderRadius: BorderRadius.circular(8)),
                 ),
                 icon: Icon(PhosphorIconsRegular.listPlus, size: 20),
-                label: const Text('Select Items'),
+                label: Text(l10n.selectItems),
               ),
             ),
           ),
@@ -831,7 +847,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildFooter(BuildContext context, double totalSum) {
+  Widget _buildFooter(BuildContext context, double totalSum, AppLocalizations l10n) {
     final numberFormat = NumberFormat('#,##0.00', 'ru_RU');
 
     return Container(
@@ -854,7 +870,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
           Row(
             children: [
               Text(
-                'Total items: ${_items.length}',
+                l10n.totalItems(_items.length),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -864,7 +880,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
               const SizedBox(width: 24),
               if (_items.isNotEmpty)
                 Text(
-                  'Total Sum: ${numberFormat.format(totalSum)} ₽',
+                  l10n.totalSum(numberFormat.format(totalSum)),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -875,14 +891,13 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
           ),
           Row(
             children: [
-              // ✅ ИЗМЕНЕНИЕ: Блокируем кнопки во время загрузки
               OutlinedButton(
                 onPressed: _isLoading ? null : _saveDocument,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   side: const BorderSide(color: borderColor),
                 ),
-                child: const Text('Save'),
+                child: Text(l10n.save),
               ),
               const SizedBox(width: 12),
               FilledButton(
@@ -897,7 +912,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Post & Close'),
+                  : Text(l10n.postAndClose),
               ),
             ],
           ),
