@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
+import 'package:warehousesys/features/stock/data/models/dashboard_data.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
@@ -289,4 +290,11 @@ final counterpartiesProvider =
 final counterpartyDetailsProvider =
     FutureProvider.family.autoDispose<Counterparty, int>((ref, counterpartyId) {
   return ref.watch(stockRepositoryProvider).getCounterpartyById(counterpartyId);
+});
+
+final selectedDashboardWarehouseProvider = StateProvider<int?>((ref) => null);
+
+final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((ref) {
+  final whId = ref.watch(selectedDashboardWarehouseProvider);
+  return ref.watch(stockRepositoryProvider).getDashboardData(warehouseId: whId);
 });

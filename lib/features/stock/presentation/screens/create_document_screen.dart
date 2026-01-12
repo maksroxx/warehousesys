@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -222,10 +223,8 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       final itemMap = {
         'variant_id': item.variantId,
         'quantity': item.quantity.toString(),
+        'price': item.price.toStringAsFixed(2),
       };
-      if (widget.documentType == 'INCOME') {
-        itemMap['price'] = item.price.toStringAsFixed(2);
-      }
       return itemMap;
     }).toList();
 
@@ -263,10 +262,20 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
     } catch (e) {
        if (!mounted) return;
-       ScaffoldMessenger.of(context).showSnackBar(
+      String errorMessage = l10n.postError(e);
+      
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+           errorMessage = data['error'].toString();
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.saveError(e)),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
@@ -302,10 +311,21 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
     } catch (e) {
        if (!mounted) return;
-       ScaffoldMessenger.of(context).showSnackBar(
+      
+      String errorMessage = l10n.postError(e);
+      
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+           errorMessage = data['error'].toString();
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.postError(e)),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
@@ -1123,6 +1143,7 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: _textFieldDecoration(),
                   textAlign: TextAlign.right,
+                  readOnly: false,
                 ),
               ),
               const SizedBox(width: 8),

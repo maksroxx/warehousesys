@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
+import 'package:warehousesys/features/stock/data/models/dashboard_data.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
@@ -21,6 +22,7 @@ abstract class IStockRepository {
   Future<List<DocumentListItem>> getDocuments(DocumentFilter filter);
   Future<List<Counterparty>> getCounterparties(CounterpartyFilter filter);
   Future<Counterparty> getCounterpartyById(int counterpartyId);
+  Future<DashboardData> getDashboardData({int? warehouseId});
 
   Future<void> createProductWithVariant({
     required String productName,
@@ -461,5 +463,16 @@ class StockRepository implements IStockRepository {
       print('Error deleting document: $e');
       rethrow;
     }
+  }
+
+  @override
+  Future<DashboardData> getDashboardData({int? warehouseId}) async {
+    final params = <String, dynamic>{};
+    if (warehouseId != null) params['warehouse_id'] = warehouseId;
+    
+    // ВАЖНО: Запрос теперь идет на /analytics/dashboard
+    final response = await _dio.get('/analytics/dashboard', queryParameters: params);
+    
+    return DashboardData.fromJson(response.data);
   }
 }
