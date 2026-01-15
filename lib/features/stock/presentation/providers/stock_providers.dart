@@ -298,3 +298,7 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((ref) {
   final whId = ref.watch(selectedDashboardWarehouseProvider);
   return ref.watch(stockRepositoryProvider).getDashboardData(warehouseId: whId);
 });
+
+final unitsProvider = FutureProvider.autoDispose<List<Unit>>((ref) {
+  return ref.watch(stockRepositoryProvider).getUnits();
+});

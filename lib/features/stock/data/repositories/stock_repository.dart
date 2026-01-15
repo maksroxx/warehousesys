@@ -23,6 +23,7 @@ abstract class IStockRepository {
   Future<List<Counterparty>> getCounterparties(CounterpartyFilter filter);
   Future<Counterparty> getCounterpartyById(int counterpartyId);
   Future<DashboardData> getDashboardData({int? warehouseId});
+  Future<List<Unit>> getUnits();
 
   Future<List<int>> downloadReport({
     required String type,
@@ -504,5 +505,18 @@ class StockRepository implements IStockRepository {
       options: Options(responseType: ResponseType.bytes),
     );
     return response.data;
+  }
+
+  @override
+  Future<List<Unit>> getUnits() async {
+    try {
+      final response = await _dio.get('/stock/units');
+      if (response.data == null) return [];
+      final List<dynamic> data = response.data;
+      return data.map((json) => Unit.fromJson(json)).toList();
+    } on DioException catch (e) {
+      print('Error fetching units: $e');
+      rethrow;
+    }
   }
 }

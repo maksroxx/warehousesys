@@ -36,6 +36,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
 
   Product? _selectedProduct;
   int? _selectedCategoryId;
+  int? _selectedUnitId;
+  
   bool _isLoading = false;
   bool _isAddingCategory = false;
   Map<String, String> _suggestedCharacteristicsValues = {};
@@ -48,6 +50,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       _nameController.text = item.productName;
       _skuController.text = item.sku;
       _selectedCategoryId = item.categoryId;
+      _selectedUnitId = item.unitId;
 
       ref.read(detailedProductProvider(item.productId).future).then((product) {
         if (mounted) {
@@ -60,6 +63,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       if (item.characteristics != null) {
         _suggestedCharacteristicsValues = Map.from(item.characteristics!);
       }
+    } else {
     }
   }
 
@@ -100,26 +104,16 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     if (_formKey.currentState?.validate() != true) return;
     final isEditMode = widget.itemToEdit != null;
     
-    if (!isEditMode &&
-        _selectedProduct == null &&
-        _nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.enterProductNameError),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (!isEditMode && _selectedProduct == null && _nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.enterProductNameError), backgroundColor: Colors.red));
       return;
     }
-    if (!isEditMode &&
-        _selectedProduct == null &&
-        _selectedCategoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.selectCategoryError),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (!isEditMode && _selectedProduct == null && _selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.selectCategoryError), backgroundColor: Colors.red));
+      return;
+    }
+    if (_selectedUnitId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Выберите единицу измерения"), backgroundColor: Colors.red));
       return;
     }
 
@@ -128,26 +122,20 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     try {
       final characteristics = {..._suggestedCharacteristicsValues};
       for (var field in _customCharacteristicFields) {
-        if (field.keyController.text.isNotEmpty &&
-            field.valueController.text.isNotEmpty) {
-          characteristics[field.keyController.text] =
-              field.valueController.text;
+        if (field.keyController.text.isNotEmpty && field.valueController.text.isNotEmpty) {
+          characteristics[field.keyController.text] = field.valueController.text;
         }
       }
 
       if (isEditMode) {
         await Future.wait([
-          ref
-              .read(stockRepositoryProvider)
-              .updateProduct(
+          ref.read(stockRepositoryProvider).updateProduct(
                 productId: widget.itemToEdit!.productId,
                 name: _nameController.text,
                 description: _descriptionController.text,
                 categoryId: _selectedCategoryId,
               ),
-          ref
-              .read(stockRepositoryProvider)
-              .updateVariant(
+          ref.read(stockRepositoryProvider).updateVariant(
                 variantId: widget.itemToEdit!.id,
                 sku: _skuController.text,
                 characteristics: characteristics,
@@ -155,23 +143,19 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
         ]);
       } else {
         if (_selectedProduct != null) {
-          await ref
-              .read(stockRepositoryProvider)
-              .createVariant(
+          await ref.read(stockRepositoryProvider).createVariant(
                 productId: _selectedProduct!.id,
                 sku: _skuController.text,
-                unitId: 1,
+                unitId: _selectedUnitId!,
                 characteristics: characteristics,
               );
         } else {
-          await ref
-              .read(stockRepositoryProvider)
-              .createProductWithVariant(
+          await ref.read(stockRepositoryProvider).createProductWithVariant(
                 productName: _nameController.text,
                 categoryId: _selectedCategoryId!,
                 description: _descriptionController.text,
                 sku: _skuController.text,
-                unitId: 1,
+                unitId: _selectedUnitId!,
                 characteristics: characteristics,
               );
         }
@@ -184,16 +168,12 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
         ref.invalidate(detailedProductProvider(item.productId));
         ref.invalidate(variantStockProvider(item.id));
         ref.invalidate(variantMovementsProvider(item.id));
-
-        ref.read(inventoryFilterProvider.notifier).state =
-            const VariantFilter();
+        ref.read(inventoryFilterProvider.notifier).state = const VariantFilter();
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            isEditMode ? l10n.itemUpdatedSuccess : l10n.itemAddedSuccess,
-          ),
+          content: Text(isEditMode ? l10n.itemUpdatedSuccess : l10n.itemAddedSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -206,10 +186,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       if (e.response?.statusCode == 500) {
         final responseData = e.response?.data;
         if (responseData is Map && responseData['error'] is String) {
-          // Оставляем проверку на английском, так как это приходит с бэкенда
-          if (responseData['error'].contains(
-            'duplicate key value violates unique constraint "idx_variants_sku"',
-          )) {
+          if (responseData['error'].contains('duplicate key value violates unique constraint "idx_variants_sku"')) {
             errorMessage = l10n.skuExistsError;
           } else {
             errorMessage = responseData['error'];
@@ -220,23 +197,9 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       } else {
         errorMessage = l10n.networkError(e.message ?? '');
       }
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
     } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.generalError(e.toString())),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.generalError(e.toString())), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -249,9 +212,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     if (name.isEmpty) return;
     setState(() => _isLoading = true);
     try {
-      final newCategory = await ref
-          .read(stockRepositoryProvider)
-          .createCategory(name);
+      final newCategory = await ref.read(stockRepositoryProvider).createCategory(name);
       ref.invalidate(categoriesProvider);
       setState(() {
         _selectedCategoryId = newCategory.id;
@@ -260,12 +221,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.categoryCreateError(e)),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.categoryCreateError(e)), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -280,12 +236,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
           const Expanded(child: Divider()),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              l10n.orSeparator,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: textGreyColor),
-            ),
+            child: Text(l10n.orSeparator, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: textGreyColor)),
           ),
           const Expanded(child: Divider()),
         ],
@@ -301,12 +252,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     final baseInputDecoration = InputDecoration(
       filled: true,
       fillColor: Colors.white,
-      border: const OutlineInputBorder(
-        borderSide: BorderSide(color: borderColor),
-      ),
-      enabledBorder: const OutlineInputBorder(
-        borderSide: BorderSide(color: borderColor),
-      ),
+      border: const OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
+      enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
     );
 
     return Dialog(
@@ -333,9 +280,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                       children: [
                         Text(
                           isEditMode ? l10n.editItemDialogTitle : l10n.addNewItemDialogTitle,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.headlineMedium?.copyWith(fontSize: 24),
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 24),
                         ),
                         const SizedBox(height: 24),
                         if (isEditMode)
@@ -344,21 +289,9 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: _buildProductColumn(
-                                  context,
-                                  baseInputDecoration,
-                                  l10n,
-                                ),
-                              ),
+                              Expanded(child: _buildProductColumn(context, baseInputDecoration, l10n)),
                               const SizedBox(width: 32),
-                              Expanded(
-                                child: _buildVariationColumn(
-                                  context,
-                                  baseInputDecoration,
-                                  l10n,
-                                ),
-                              ),
+                              Expanded(child: _buildVariationColumn(context, baseInputDecoration, l10n)),
                             ],
                           ),
                       ],
@@ -374,11 +307,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     );
   }
 
-  Widget _buildProductColumn(
-    BuildContext context,
-    InputDecoration baseInputDecoration,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildProductColumn(BuildContext context, InputDecoration baseInputDecoration, AppLocalizations l10n) {
     final productsAsync = ref.watch(productsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final isNewProduct = _selectedProduct == null;
@@ -413,29 +342,19 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
               ),
               onChanged: (product) {
                 if (product == null) return;
-                ref.read(detailedProductProvider(product.id).future).then((
-                  detailedProduct,
-                ) {
+                ref.read(detailedProductProvider(product.id).future).then((detailedProduct) {
                   if (!mounted) return;
                   setState(() {
                     _selectedProduct = detailedProduct;
                     _nameController.text = detailedProduct.name;
-                    _descriptionController.text =
-                        detailedProduct.description ?? '';
+                    _descriptionController.text = detailedProduct.description ?? '';
                     _selectedCategoryId = detailedProduct.categoryId;
                     _suggestedCharacteristicsValues.clear();
                     _skuController.clear();
                   });
                 });
               },
-              items: products
-                  .map(
-                    (p) => DropdownMenuItem<Product>(
-                      value: p,
-                      child: Text(p.name, overflow: TextOverflow.ellipsis),
-                    ),
-                  )
-                  .toList(),
+              items: products.map((p) => DropdownMenuItem<Product>(value: p, child: Text(p.name, overflow: TextOverflow.ellipsis))).toList(),
             ),
           ),
         ),
@@ -452,9 +371,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                   label: l10n.newProductName,
                   child: TextFormField(
                     controller: _nameController,
-                    decoration: baseInputDecoration.copyWith(
-                      hintText: l10n.productNameHint,
-                    ),
+                    decoration: baseInputDecoration.copyWith(hintText: l10n.productNameHint),
                   ),
                 ),
                 _FormEntry(
@@ -465,23 +382,12 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                             Expanded(
                               child: TextFormField(
                                 controller: _newCategoryController,
-                                decoration: baseInputDecoration.copyWith(
-                                  hintText: l10n.newCategoryNameHint,
-                                ),
+                                decoration: baseInputDecoration.copyWith(hintText: l10n.newCategoryNameHint),
                                 autofocus: true,
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.check),
-                              color: Colors.green,
-                              onPressed: _handleAddNewCategory,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              color: Colors.red,
-                              onPressed: () =>
-                                  setState(() => _isAddingCategory = false),
-                            ),
+                            IconButton(icon: const Icon(Icons.check), color: Colors.green, onPressed: _handleAddNewCategory),
+                            IconButton(icon: const Icon(Icons.close), color: Colors.red, onPressed: () => setState(() => _isAddingCategory = false)),
                           ],
                         )
                       : categoriesAsync.when(
@@ -502,21 +408,10 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                               }
                             },
                             items: [
-                              ...categories.map(
-                                (c) => DropdownMenuItem<int>(
-                                  value: c.id,
-                                  child: Text(c.name),
-                                ),
-                              ),
+                              ...categories.map((c) => DropdownMenuItem<int>(value: c.id, child: Text(c.name))),
                                DropdownMenuItem<int>(
                                 value: -1,
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.add, size: 16),
-                                    const SizedBox(width: 8),
-                                    Text(l10n.addNewOption),
-                                  ],
-                                ),
+                                child: Row(children: [const Icon(Icons.add, size: 16), const SizedBox(width: 8), Text(l10n.addNewOption)]),
                               ),
                             ],
                           ),
@@ -526,9 +421,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                   label: l10n.description,
                   child: TextFormField(
                     controller: _descriptionController,
-                    decoration: baseInputDecoration.copyWith(
-                      hintText: l10n.descriptionHint,
-                    ),
+                    decoration: baseInputDecoration.copyWith(hintText: l10n.descriptionHint),
                     maxLines: 3,
                   ),
                 ),
@@ -540,85 +433,74 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     );
   }
 
-  Widget _buildVariationColumn(
-    BuildContext context,
-    InputDecoration baseInputDecoration,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildVariationColumn(BuildContext context, InputDecoration baseInputDecoration, AppLocalizations l10n) {
     final tempProduct = _selectedProduct;
+    final unitsAsync = ref.watch(unitsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(l10n.variationSection),
+        
+        // SKU
         _FormEntry(
           label: l10n.tableSku,
           isRequired: true,
           child: TextFormField(
             controller: _skuController,
-            decoration: baseInputDecoration.copyWith(
-              hintText: l10n.skuHint,
-            ),
+            decoration: baseInputDecoration.copyWith(hintText: l10n.skuHint),
             validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
           ),
         ),
+
+        _FormEntry(
+          label: l10n.unit, 
+          isRequired: true,
+          child: unitsAsync.when(
+            loading: () => const LinearProgressIndicator(),
+            error: (e,s) => Text("${l10n.error}: $e"),
+            data: (units) => DropdownButtonFormField<int>(
+              value: _selectedUnitId,
+              hint: const Text("Выберите ед. изм."),
+              decoration: baseInputDecoration,
+              items: units.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))).toList(),
+              onChanged: (val) => setState(() => _selectedUnitId = val),
+              validator: (v) => v == null ? l10n.requiredField : null,
+            ),
+          ),
+        ),
+
         const SizedBox(height: 24),
         _SectionHeader(l10n.characteristicsSection, isSubHeader: true),
         if (tempProduct != null)
           Consumer(
             builder: (context, ref, child) {
-              final optionsAsync = ref.watch(
-                productOptionsProvider(tempProduct.id),
-              );
+              final optionsAsync = ref.watch(productOptionsProvider(tempProduct.id));
               return optionsAsync.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
+                loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
                 error: (e, s) => Text('${l10n.error}: $e'),
                 data: (data) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) return;
                     if (_descriptionController.text.isEmpty) {
-                      _descriptionController.text =
-                          data.product.description ?? '';
+                      _descriptionController.text = data.product.description ?? '';
                     }
-                    if (data.variants.isNotEmpty &&
-                        _skuController.text.length <=
-                            tempProduct.name.length + 1) {
+                    if (data.variants.isNotEmpty && _skuController.text.length <= tempProduct.name.length + 1) {
                       _skuController.text = data.variants.first.sku;
-                    } // ?? '${tempProduct.name}-'; }
+                    }
                   });
-                  if (data.options.isEmpty &&
-                      _customCharacteristicFields.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        l10n.noCharacteristicsYet,
-                        style: const TextStyle(color: textGreyColor),
-                      ),
-                    );
+                  if (data.options.isEmpty && _customCharacteristicFields.isEmpty) {
+                    return Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(l10n.noCharacteristicsYet, style: const TextStyle(color: textGreyColor)));
                   }
                   return Column(
-                    children: data.options
-                        .map(
-                          (option) => _FormEntry(
+                    children: data.options.map((option) => _FormEntry(
                             label: option.type,
                             child: TextFormField(
-                              decoration: baseInputDecoration.copyWith(
-                                hintText: l10n.valueFor(option.type),
-                              ),
-                              onChanged: (value) => setState(
-                                () =>
-                                    _suggestedCharacteristicsValues[option
-                                            .type] =
-                                        value,
-                              ),
+                              initialValue: _suggestedCharacteristicsValues[option.type],
+                              decoration: baseInputDecoration.copyWith(hintText: l10n.valueFor(option.type)),
+                              onChanged: (value) => setState(() => _suggestedCharacteristicsValues[option.type] = value),
                             ),
-                          ),
-                        )
-                        .toList(),
+                          )).toList(),
                   );
                 },
               );
@@ -640,14 +522,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
           width: double.infinity,
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(
-                color: borderColor,
-                style: BorderStyle.solid,
-                width: 2,
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: const BorderSide(color: borderColor, style: BorderStyle.solid, width: 2),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             icon: Icon(PhosphorIconsRegular.plus, size: 16),
@@ -659,17 +535,12 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     );
   }
 
-  Widget _buildEditColumn(
-    BuildContext context,
-    InputDecoration baseInputDecoration,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildEditColumn(BuildContext context, InputDecoration baseInputDecoration, AppLocalizations l10n) {
     final itemToEdit = widget.itemToEdit!;
-    final tempProduct = Product(
-      id: itemToEdit.productId,
-      name: itemToEdit.productName,
-    );
+    final tempProduct = Product(id: itemToEdit.productId, name: itemToEdit.productName);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final unitsAsync = ref.watch(unitsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -686,26 +557,9 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
           child: _isAddingCategory
               ? Row(
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _newCategoryController,
-                        decoration: baseInputDecoration.copyWith(
-                          hintText: l10n.newCategoryNameHint,
-                        ),
-                        autofocus: true,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.check),
-                      color: Colors.green,
-                      onPressed: _handleAddNewCategory,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      color: Colors.red,
-                      onPressed: () =>
-                          setState(() => _isAddingCategory = false),
-                    ),
+                    Expanded(child: TextFormField(controller: _newCategoryController, decoration: baseInputDecoration.copyWith(hintText: l10n.newCategoryNameHint), autofocus: true)),
+                    IconButton(icon: const Icon(Icons.check), color: Colors.green, onPressed: _handleAddNewCategory),
+                    IconButton(icon: const Icon(Icons.close), color: Colors.red, onPressed: () => setState(() => _isAddingCategory = false)),
                   ],
                 )
               : categoriesAsync.when(
@@ -717,31 +571,14 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                     decoration: baseInputDecoration,
                     onChanged: (value) {
                       if (value == -1) {
-                        setState(() {
-                          _isAddingCategory = true;
-                          _selectedCategoryId = null;
-                        });
+                        setState(() { _isAddingCategory = true; _selectedCategoryId = null; });
                       } else {
                         setState(() => _selectedCategoryId = value);
                       }
                     },
                     items: [
-                      ...categories.map(
-                        (c) => DropdownMenuItem<int>(
-                          value: c.id,
-                          child: Text(c.name),
-                        ),
-                      ),
-                      DropdownMenuItem<int>(
-                        value: -1,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.add, size: 16),
-                            const SizedBox(width: 8),
-                            Text(l10n.addNewOption),
-                          ],
-                        ),
-                      ),
+                      ...categories.map((c) => DropdownMenuItem<int>(value: c.id, child: Text(c.name))),
+                      DropdownMenuItem<int>(value: -1, child: Row(children: [const Icon(Icons.add, size: 16), const SizedBox(width: 8), Text(l10n.addNewOption)])),
                     ],
                   ),
                 ),
@@ -761,58 +598,49 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
           isRequired: true,
           child: TextFormField(
             controller: _skuController,
-            decoration: baseInputDecoration.copyWith(
-              hintText: l10n.skuHint,
-            ),
+            decoration: baseInputDecoration.copyWith(hintText: l10n.skuHint),
             validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
           ),
         ),
+        
+        // need check
+        // _FormEntry(
+        //   label: l10n.unit,
+        //   isRequired: true,
+        //   child: unitsAsync.when(
+        //     loading: () => const SizedBox.shrink(),
+        //     error: (e,s) => Text("${l10n.error}: $e"),
+        //     data: (units) => DropdownButtonFormField<int>(
+        //       value: _selectedUnitId,
+        //       hint: const Text("Выберите ед. изм."),
+        //       decoration: baseInputDecoration,
+        //       items: units.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))).toList(),
+        //       onChanged: (val) => setState(() => _selectedUnitId = val),
+        //     ),
+        //   ),
+        // ),
+
         const SizedBox(height: 24),
         _SectionHeader(l10n.characteristicsSection, isSubHeader: true),
         Consumer(
           builder: (context, ref, child) {
-            final optionsAsync = ref.watch(
-              productOptionsProvider(tempProduct.id),
-            );
+            final optionsAsync = ref.watch(productOptionsProvider(tempProduct.id));
             return optionsAsync.when(
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
+              loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
               error: (e, s) => Text('${l10n.error}: $e'),
               data: (data) {
-                if (data.options.isEmpty &&
-                    _customCharacteristicFields.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      l10n.noCharacteristicsYet,
-                      style: const TextStyle(color: textGreyColor),
-                    ),
-                  );
+                if (data.options.isEmpty && _customCharacteristicFields.isEmpty) {
+                  return Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(l10n.noCharacteristicsYet, style: const TextStyle(color: textGreyColor)));
                 }
                 return Column(
-                  children: data.options
-                      .map(
-                        (option) => _FormEntry(
+                  children: data.options.map((option) => _FormEntry(
                           label: option.type,
                           child: TextFormField(
-                            initialValue:
-                                _suggestedCharacteristicsValues[option.type],
-                            decoration: baseInputDecoration.copyWith(
-                              hintText: l10n.valueFor(option.type),
-                            ),
-                            onChanged: (value) => setState(
-                              () =>
-                                  _suggestedCharacteristicsValues[option.type] =
-                                      value,
-                            ),
+                            initialValue: _suggestedCharacteristicsValues[option.type],
+                            decoration: baseInputDecoration.copyWith(hintText: l10n.valueFor(option.type)),
+                            onChanged: (value) => setState(() => _suggestedCharacteristicsValues[option.type] = value),
                           ),
-                        ),
-                      )
-                      .toList(),
+                        )).toList(),
                 );
               },
             );
@@ -834,14 +662,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
           width: double.infinity,
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(
-                color: borderColor,
-                style: BorderStyle.solid,
-                width: 2,
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: const BorderSide(color: borderColor, style: BorderStyle.solid, width: 2),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             icon: Icon(PhosphorIconsRegular.plus, size: 16),
@@ -863,38 +685,19 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.cancel),
-          ),
+          OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.cancel)),
           const SizedBox(width: 16),
           if (_isLoading)
             FilledButton.icon(
               onPressed: null,
-              icon: const SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              ),
+              icon: const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
               label: Text(l10n.save),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-              ),
+              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
             )
           else
             FilledButton(
               onPressed: _submitForm,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-              ),
+              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
               child: Text(l10n.save),
             ),
         ],
@@ -914,18 +717,11 @@ class _SectionHeader extends StatelessWidget {
         ? theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)
         : theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600);
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: isSubHeader ? 12 : 8,
-        top: isSubHeader ? 16 : 0,
-      ),
+      padding: EdgeInsets.only(bottom: isSubHeader ? 12 : 8, top: isSubHeader ? 16 : 0),
       child: Container(
         width: double.infinity,
         padding: isSubHeader ? null : const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          border: isSubHeader
-              ? null
-              : const Border(bottom: BorderSide(color: borderColor)),
-        ),
+        decoration: BoxDecoration(border: isSubHeader ? null : const Border(bottom: BorderSide(color: borderColor))),
         child: Text(title, style: textStyle),
       ),
     );
@@ -936,11 +732,7 @@ class _FormEntry extends StatelessWidget {
   final String label;
   final Widget child;
   final bool isRequired;
-  const _FormEntry({
-    required this.label,
-    required this.child,
-    this.isRequired = false,
-  });
+  const _FormEntry({required this.label, required this.child, this.isRequired = false});
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -948,20 +740,8 @@ class _FormEntry extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(label, style: Theme.of(context).textTheme.bodyMedium),
-              if (isRequired)
-                const Text(
-                  ' *',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
+          Row(children: [Text(label, style: Theme.of(context).textTheme.bodyMedium), if (isRequired) const Text(' *', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))]),
+          const SizedBox(height: 8), // Чуть увеличил отступ для дропдаунов
           child,
         ],
       ),
@@ -974,12 +754,7 @@ class _CharacteristicRow extends ConsumerWidget {
   final bool canBeRemoved;
   final VoidCallback onRemove;
   final InputDecoration baseInputDecoration;
-  const _CharacteristicRow({
-    required this.field,
-    required this.canBeRemoved,
-    required this.onRemove,
-    required this.baseInputDecoration,
-  });
+  const _CharacteristicRow({required this.field, required this.canBeRemoved, required this.onRemove, required this.baseInputDecoration});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -989,66 +764,26 @@ class _CharacteristicRow extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: charTypesAsync.when(
               data: (allTypes) => Autocomplete<String>(
                 optionsBuilder: (textEditingValue) {
-                  if (textEditingValue.text.isEmpty)
-                    return const Iterable.empty();
-                  return allTypes
-                      .where(
-                        (type) => type.name.toLowerCase().contains(
-                          textEditingValue.text.toLowerCase(),
-                        ),
-                      )
-                      .map((e) => e.name);
+                  if (textEditingValue.text.isEmpty) return const Iterable.empty();
+                  return allTypes.where((type) => type.name.toLowerCase().contains(textEditingValue.text.toLowerCase())).map((e) => e.name);
                 },
                 onSelected: (option) => field.keyController.text = option,
-                fieldViewBuilder:
-                    (context, controller, focusNode, onSubmitted) {
-                      return TextFormField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        decoration: baseInputDecoration.copyWith(
-                          hintText: l10n.propertyLabel,
-                        ),
-                        onChanged: (v) => field.keyController.text = v,
-                      );
-                    },
+                fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                  return TextFormField(controller: controller, focusNode: focusNode, decoration: baseInputDecoration.copyWith(hintText: l10n.propertyLabel), onChanged: (v) => field.keyController.text = v);
+                },
               ),
-              loading: () => TextFormField(
-                controller: field.keyController,
-                decoration: baseInputDecoration.copyWith(hintText: l10n.propertyLabel),
-              ),
-              error: (e, s) => TextFormField(
-                controller: field.keyController,
-                decoration: baseInputDecoration.copyWith(hintText: l10n.error),
-              ),
+              loading: () => TextFormField(controller: field.keyController, decoration: baseInputDecoration.copyWith(hintText: l10n.propertyLabel)),
+              error: (e, s) => TextFormField(controller: field.keyController, decoration: baseInputDecoration.copyWith(hintText: l10n.error)),
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: TextFormField(
-              controller: field.valueController,
-              decoration: baseInputDecoration.copyWith(hintText: l10n.valueLabel),
-            ),
-          ),
-          if (canBeRemoved)
-            IconButton(
-              icon: Icon(
-                PhosphorIconsRegular.trash,
-                color: Colors.grey.shade400,
-              ),
-              hoverColor: Colors.red.withAlpha(20),
-              highlightColor: Colors.red.withAlpha(40),
-              onPressed: onRemove,
-              // К сожалению, тултип жестко задан в ARB, для "Remove" можно использовать deleteItem или создать новый ключ
-              tooltip: l10n.deleteItem, 
-            )
-          else
-            const SizedBox(width: 48),
+          Expanded(child: TextFormField(controller: field.valueController, decoration: baseInputDecoration.copyWith(hintText: l10n.valueLabel))),
+          if (canBeRemoved) IconButton(icon: Icon(PhosphorIconsRegular.trash, color: Colors.grey.shade400), onPressed: onRemove) else const SizedBox(width: 48),
         ],
       ),
     );

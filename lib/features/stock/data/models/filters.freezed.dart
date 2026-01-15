@@ -739,3 +739,162 @@ abstract class _CharacteristicType implements CharacteristicType {
   _$$CharacteristicTypeImplCopyWith<_$CharacteristicTypeImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+Unit _$UnitFromJson(Map<String, dynamic> json) {
+  return _Unit.fromJson(json);
+}
+
+/// @nodoc
+mixin _$Unit {
+  int get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+
+  /// Serializes this Unit to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of Unit
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $UnitCopyWith<Unit> get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $UnitCopyWith<$Res> {
+  factory $UnitCopyWith(Unit value, $Res Function(Unit) then) =
+      _$UnitCopyWithImpl<$Res, Unit>;
+  @useResult
+  $Res call({int id, String name});
+}
+
+/// @nodoc
+class _$UnitCopyWithImpl<$Res, $Val extends Unit>
+    implements $UnitCopyWith<$Res> {
+  _$UnitCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of Unit
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? id = null, Object? name = null}) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as int,
+            name: null == name
+                ? _value.name
+                : name // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$UnitImplCopyWith<$Res> implements $UnitCopyWith<$Res> {
+  factory _$$UnitImplCopyWith(
+    _$UnitImpl value,
+    $Res Function(_$UnitImpl) then,
+  ) = __$$UnitImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({int id, String name});
+}
+
+/// @nodoc
+class __$$UnitImplCopyWithImpl<$Res>
+    extends _$UnitCopyWithImpl<$Res, _$UnitImpl>
+    implements _$$UnitImplCopyWith<$Res> {
+  __$$UnitImplCopyWithImpl(_$UnitImpl _value, $Res Function(_$UnitImpl) _then)
+    : super(_value, _then);
+
+  /// Create a copy of Unit
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? id = null, Object? name = null}) {
+    return _then(
+      _$UnitImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as int,
+        name: null == name
+            ? _value.name
+            : name // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$UnitImpl implements _Unit {
+  const _$UnitImpl({required this.id, required this.name});
+
+  factory _$UnitImpl.fromJson(Map<String, dynamic> json) =>
+      _$$UnitImplFromJson(json);
+
+  @override
+  final int id;
+  @override
+  final String name;
+
+  @override
+  String toString() {
+    return 'Unit(id: $id, name: $name)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UnitImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, name);
+
+  /// Create a copy of Unit
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UnitImplCopyWith<_$UnitImpl> get copyWith =>
+      __$$UnitImplCopyWithImpl<_$UnitImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$UnitImplToJson(this);
+  }
+}
+
+abstract class _Unit implements Unit {
+  const factory _Unit({required final int id, required final String name}) =
+      _$UnitImpl;
+
+  factory _Unit.fromJson(Map<String, dynamic> json) = _$UnitImpl.fromJson;
+
+  @override
+  int get id;
+  @override
+  String get name;
+
+  /// Create a copy of Unit
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$UnitImplCopyWith<_$UnitImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}

@@ -6,28 +6,6 @@ part 'variant.freezed.dart';
 part 'variant.g.dart';
 
 @freezed
-class InventoryItem with _$InventoryItem {
-  const factory InventoryItem({
-    required int id,
-    @JsonKey(name: 'product_id') required int productId,
-    @JsonKey(name: 'product_name') required String productName,
-
-    @JsonKey(name: 'category_id') required int categoryId,
-    @JsonKey(name: 'category_name') required String categoryName,
-
-    required String sku,
-    @JsonKey(name: 'unit_name') required String unitName,
-    @JsonKey(name: 'quantity_on_stock', defaultValue: "0")
-        required String quantityOnStock,
-
-    final Map<String, String>? characteristics,
-  }) = _InventoryItem;
-
-  factory InventoryItem.fromJson(Map<String, dynamic> json) =>
-      _$InventoryItemFromJson(json);
-}
-
-@freezed
 class VariantFilter with _$VariantFilter {
   const factory VariantFilter({
     String? name,
@@ -63,4 +41,29 @@ extension VariantFilterX on VariantFilter {
 
     return map;
   }
+}
+
+@freezed
+class InventoryItem with _$InventoryItem {
+  const factory InventoryItem({
+    required int id,
+    @JsonKey(name: 'product_id') required int productId,
+    @JsonKey(name: 'product_name') required String productName,
+
+    @JsonKey(name: 'category_id') required int categoryId,
+    @JsonKey(name: 'category_name') required String categoryName,
+
+    required String sku,
+    
+    @JsonKey(name: 'unit_id') required int unitId, 
+    @JsonKey(name: 'unit_name') required String unitName,
+    
+    @JsonKey(name: 'quantity_on_stock', defaultValue: "0")
+        required String quantityOnStock,
+
+    final Map<String, String>? characteristics,
+  }) = _InventoryItem;
+
+  factory InventoryItem.fromJson(Map<String, dynamic> json) =>
+      _$InventoryItemFromJson(json);
 }

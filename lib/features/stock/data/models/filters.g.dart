@@ -50,3 +50,9 @@ _$CharacteristicTypeImpl _$$CharacteristicTypeImplFromJson(
 Map<String, dynamic> _$$CharacteristicTypeImplToJson(
   _$CharacteristicTypeImpl instance,
 ) => <String, dynamic>{'id': instance.id, 'name': instance.name};
+
+_$UnitImpl _$$UnitImplFromJson(Map<String, dynamic> json) =>
+    _$UnitImpl(id: (json['id'] as num).toInt(), name: json['name'] as String);
+
+Map<String, dynamic> _$$UnitImplToJson(_$UnitImpl instance) =>
+    <String, dynamic>{'id': instance.id, 'name': instance.name};
