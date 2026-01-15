@@ -363,83 +363,96 @@ class _MonthlyCalendarHeatmap extends StatelessWidget {
     final Map<String, double> activityMap = {};
     double maxActivity = 0;
 
-    for (var p in fullData) {
-      double val = double.tryParse(p.value) ?? 0;
+    for (final p in fullData) {
+      final val = double.tryParse(p.value) ?? 0;
       activityMap[p.date] = (activityMap[p.date] ?? 0) + val;
     }
-    
+
     if (activityMap.isNotEmpty) {
       maxActivity = activityMap.values.reduce((a, b) => a > b ? a : b);
     }
-    if (maxActivity == 0) maxActivity = 1;
+    if (maxActivity <= 0) maxActivity = 1;
 
     final now = DateTime.now();
-    final daysCount = 35; 
-    final startDate = now.subtract(Duration(days: daysCount - 1));
+    final today = DateTime(now.year, now.month, now.day);
+
+    const daysCount = 35;
+    final startDate = today.subtract(const Duration(days: daysCount - 1));
 
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            const Text("Меньше", style: TextStyle(fontSize: 10, color: textGreyColor)),
-            const SizedBox(width: 8),
-            _HeatmapBox(opacity: 0.1),
-            const SizedBox(width: 4),
-            _HeatmapBox(opacity: 0.4),
-            const SizedBox(width: 4),
-            _HeatmapBox(opacity: 0.7),
-            const SizedBox(width: 4),
-            _HeatmapBox(opacity: 1.0),
-            const SizedBox(width: 8),
-            const Text("Больше", style: TextStyle(fontSize: 10, color: textGreyColor)),
+          children: const [
+            Text("Меньше", style: TextStyle(fontSize: 10, color: textGreyColor)),
+            SizedBox(width: 8),
+            _HeatmapBox(opacity: 0.15),
+            SizedBox(width: 4),
+            _HeatmapBox(opacity: 0.35),
+            SizedBox(width: 4),
+            _HeatmapBox(opacity: 0.55),
+            SizedBox(width: 4),
+            _HeatmapBox(opacity: 0.8),
+            SizedBox(width: 8),
+            Text("Больше", style: TextStyle(fontSize: 10, color: textGreyColor)),
           ],
         ),
         const SizedBox(height: 16),
-        
         GridView.builder(
+          shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true, 
+          itemCount: daysCount,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7, 
+            crossAxisCount: 7,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             childAspectRatio: 1.3,
           ),
-          itemCount: daysCount,
           itemBuilder: (context, index) {
             final day = startDate.add(Duration(days: index));
             final dateKey = DateFormat('yyyy-MM-dd').format(day);
             final activity = activityMap[dateKey] ?? 0;
-            final dayNum = day.day.toString();
-            
+            final isToday = DateUtils.isSameDay(day, today);
+
             Color bgColor;
             Color textColor;
-            
-            if (activity == 0) {
+            BoxBorder? border;
+
+            if (isToday) {
+              bgColor = primaryColor;
+              textColor = Colors.white;
+              border = Border.all(
+                color: primaryColor.withOpacity(0.45),
+                width: 1.5,
+              );
+            } else if (activity == 0) {
               bgColor = Colors.grey.shade100;
               textColor = textGreyColor;
+              border = null;
             } else {
-              final opacity = (activity / maxActivity).clamp(0.2, 1.0);
+              final opacity =
+                  (activity / maxActivity).clamp(0.15, 0.6).toDouble();
               bgColor = primaryColor.withOpacity(opacity);
-              textColor = opacity > 0.5 ? Colors.white : primaryColor;
+              textColor = primaryColor;
+              border = null;
             }
 
             return Tooltip(
-              message: "$dateKey: ${activity.toStringAsFixed(0)} операций",
+              message:
+                  "$dateKey: ${activity.toStringAsFixed(0)} операций${isToday ? ' (сегодня)' : ''}",
               child: Container(
                 decoration: BoxDecoration(
                   color: bgColor,
                   borderRadius: BorderRadius.circular(6),
+                  border: border,
                 ),
-                child: Center(
-                  child: Text(
-                    dayNum,
-                    style: TextStyle(
-                      color: textColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12
-                    ),
+                alignment: Alignment.center,
+                child: Text(
+                  day.day.toString(),
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isToday ? 14 : 12,
                   ),
                 ),
               ),
