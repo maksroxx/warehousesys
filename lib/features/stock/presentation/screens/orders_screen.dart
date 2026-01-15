@@ -17,7 +17,6 @@ final orderFilterProvider = StateProvider<DocumentFilter>((ref) {
 final ordersProvider =
     StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
   final repository = ref.watch(stockRepositoryProvider);
-  final filter = ref.watch(orderFilterProvider); 
   
   return DocumentListNotifier(repository, ref, orderFilterProvider);
 });
@@ -77,7 +76,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               });
             },
             decoration: InputDecoration(
-              hintText: l10n.searchOrdersHint, // Локализация
+              hintText: l10n.searchOrdersHint,
               prefixIcon: Icon(
                 PhosphorIconsRegular.magnifyingGlass,
                 color: textGreyColor,
@@ -97,7 +96,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Используем существующий ключ orders из меню
         Text(l10n.orders, style: textTheme.headlineMedium),
         ElevatedButton.icon(
           icon: Icon(PhosphorIconsRegular.plus, color: Colors.white),
@@ -111,19 +109,22 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
             elevation: 1,
           ),
-          label: Text(l10n.createOrder), // Локализация
+          label: Text(l10n.createOrder),
         ),
       ],
     );
   }
 
   Widget _buildContent(DocumentListState state, AppLocalizations l10n) {
-    if (state.isLoadingFirstPage)
+    if (state.isLoadingFirstPage) {
       return const Center(child: CircularProgressIndicator());
-    if (state.error != null && state.documents.isEmpty)
+    }
+    if (state.error != null && state.documents.isEmpty) {
       return Center(child: Text('${l10n.error}: ${state.error}'));
-    if (state.documents.isEmpty)
+    }
+    if (state.documents.isEmpty) {
       return Center(child: Text(l10n.noOrdersFound));
+    }
 
     return GridView.builder(
       controller: _scrollController,
@@ -194,7 +195,7 @@ class ShipmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.cardCounterparty(shipment.counterpartyName ?? 'N/A'), // Локализация с параметром
+              l10n.cardCounterparty(shipment.counterpartyName ?? 'N/A'),
               style: textTheme.bodySmall?.copyWith(color: textGreyColor),
               overflow: TextOverflow.ellipsis,
             ),
@@ -203,11 +204,11 @@ class ShipmentCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  l10n.cardCreated(dateFormat.format(shipment.createdAt.toLocal())), // Локализация с параметром
+                  l10n.cardCreated(dateFormat.format(shipment.createdAt.toLocal())),
                   style: textTheme.bodySmall?.copyWith(color: textGreyColor),
                 ),
                 Text(
-                  l10n.cardItems(shipment.totalItems), // Локализация с параметром
+                  l10n.cardItems(shipment.totalItems),
                   style: textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -241,7 +242,6 @@ class _StatusChip extends StatelessWidget {
     Color bgColor = Colors.grey.shade100;
     String text = status;
 
-    // Локализация статусов
     switch(status) {
       case 'posted':
         textColor = Colors.green.shade800;

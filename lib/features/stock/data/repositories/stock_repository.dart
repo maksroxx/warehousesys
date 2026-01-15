@@ -24,6 +24,15 @@ abstract class IStockRepository {
   Future<Counterparty> getCounterpartyById(int counterpartyId);
   Future<DashboardData> getDashboardData({int? warehouseId});
 
+  Future<List<int>> downloadReport({
+    required String type,
+    String format = 'pdf',
+    required DateTime dateFrom,
+    required DateTime dateTo,
+    int? warehouseId,
+    double? taxRate,
+  });
+
   Future<void> createProductWithVariant({
     required String productName,
     String? description,
@@ -468,11 +477,32 @@ class StockRepository implements IStockRepository {
   @override
   Future<DashboardData> getDashboardData({int? warehouseId}) async {
     final params = <String, dynamic>{};
-    if (warehouseId != null) params['warehouse_id'] = warehouseId;
-    
-    // ВАЖНО: Запрос теперь идет на /analytics/dashboard
+    if (warehouseId != null) params['warehouse_id'] = warehouseId;    
     final response = await _dio.get('/analytics/dashboard', queryParameters: params);
-    
     return DashboardData.fromJson(response.data);
+  }
+
+  @override
+  Future<List<int>> downloadReport({
+    required String type,
+    String format = 'pdf',
+    required DateTime dateFrom,
+    required DateTime dateTo,
+    int? warehouseId,
+    double? taxRate,
+  }) async {
+    final response = await _dio.get(
+      '/reports/download',
+      queryParameters: {
+        'type': type,
+        'format': format,
+        'date_from': dateFrom.toUtc().toIso8601String(),
+        'date_to': dateTo.toUtc().toIso8601String(),
+        if (warehouseId != null) 'warehouse_id': warehouseId,
+        if (taxRate != null) 'tax_rate': taxRate,
+      },
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return response.data;
   }
 }

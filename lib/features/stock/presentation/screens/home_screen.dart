@@ -171,7 +171,6 @@ class _DynamicsSectionState extends State<_DynamicsSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Заголовок и переключатель
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -202,15 +201,13 @@ class _DynamicsSectionState extends State<_DynamicsSection> {
           ),
           const SizedBox(height: 24),
           
-          // Контент
-          // ИСПРАВЛЕНО: Убрали жесткую высоту для календаря.
           _selectedIndex == 0
               ? SizedBox(
-                  height: 300, // Графику нужна высота
+                  height: 300,
                   width: double.infinity,
                   child: _WeeklyBarChart(fullData: widget.data.chartData),
                 )
-              : _MonthlyCalendarHeatmap(fullData: widget.data.chartData), // Календарь растянется сам
+              : _MonthlyCalendarHeatmap(fullData: widget.data.chartData),
         ],
       ),
     );
@@ -264,7 +261,6 @@ class _WeeklyBarChart extends StatelessWidget {
       DateFormat('yyyy-MM-dd').format(now.subtract(Duration(days: 6 - i)))
     );
 
-    // Группируем данные
     final Map<String, double> incomeMap = {};
     final Map<String, double> outcomeMap = {};
     double maxValue = 0;
@@ -286,7 +282,6 @@ class _WeeklyBarChart extends StatelessWidget {
 
     return Column(
       children: [
-        // Легенда
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -296,14 +291,13 @@ class _WeeklyBarChart extends StatelessWidget {
           ],
         ),
         const Spacer(),
-        // Столбцы
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: last7Days.map((date) {
             final income = incomeMap[date] ?? 0;
             final outcome = outcomeMap[date] ?? 0;
-            final dateLabel = DateFormat('E', 'ru').format(DateTime.parse(date)); // Пн, Вт...
+            final dateLabel = DateFormat('E', 'ru').format(DateTime.parse(date));
 
             final hFactorIn = income / maxValue;
             final hFactorOut = outcome / maxValue;
@@ -404,14 +398,13 @@ class _MonthlyCalendarHeatmap extends StatelessWidget {
         const SizedBox(height: 16),
         
         GridView.builder(
-          // Важно: отключаем скролл и используем shrinkWrap
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true, 
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7, 
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
-            childAspectRatio: 1.3, // Оптимальное соотношение для ячеек
+            childAspectRatio: 1.3,
           ),
           itemCount: daysCount,
           itemBuilder: (context, index) {

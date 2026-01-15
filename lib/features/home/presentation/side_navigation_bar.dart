@@ -84,7 +84,7 @@ class SideNavigationBar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: _NavItem(
-              label: l10n.settings, // Локализация настроек
+              label: l10n.settings,
               icon: selectedIndex == 6 ? PhosphorIconsFill.gear : PhosphorIconsRegular.gear,
               isSelected: selectedIndex == 6,
               isCollapsed: isCollapsed,

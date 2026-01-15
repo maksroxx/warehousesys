@@ -114,15 +114,15 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
     final textTheme = Theme.of(context).textTheme;
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [ 
       Text(l10n.inventoryManagement, style: textTheme.headlineMedium), 
-      // ElevatedButton(
-      //   onPressed: () {
-      //     showDialog(
-      //       context: context,
-      //       builder: (context) => const AddItemDialog(),
-      //     );
-      //   }, 
-      //   style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 1), 
-      //   child: Text(l10n.addItem, style: textTheme.bodyMedium?.copyWith(color: Colors.white)))
+      ElevatedButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => const AddItemDialog(),
+          );
+        }, 
+        style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 1), 
+        child: Text(l10n.addItem, style: textTheme.bodyMedium?.copyWith(color: Colors.white)))
         ]);
   }
 
@@ -234,7 +234,6 @@ class _StatusFilterMenu extends ConsumerWidget {
     final currentFilter = ref.watch(inventoryFilterProvider);
     final l10n = AppLocalizations.of(context)!;
     
-    // Вспомогательная функция для получения локализованного имени статуса
     String getLocalizedStatusName(StockStatus status) {
       if (status == StockStatus.all) return l10n.allStatuses;
       if (status == StockStatus.inStock) return l10n.inStock;
@@ -256,7 +255,7 @@ class _StatusFilterMenu extends ConsumerWidget {
 }
 
 class _InventoryListRow extends StatelessWidget {
-  const _InventoryListRow({super.key, this.item, this.isHeader = false}); 
+  const _InventoryListRow({this.item, this.isHeader = false}); 
   final InventoryItem? item; 
   final bool isHeader;
   
