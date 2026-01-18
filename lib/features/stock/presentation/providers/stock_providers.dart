@@ -302,3 +302,23 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((ref) {
 final unitsProvider = FutureProvider.autoDispose<List<Unit>>((ref) {
   return ref.watch(stockRepositoryProvider).getUnits();
 });
+
+final inventoryDocsFilterProvider = StateProvider<DocumentFilter>((ref) {
+  return const DocumentFilter(types: ['INVENTORY']);
+});
+
+final inventoryDocsProvider =
+    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
+  final repository = ref.watch(stockRepositoryProvider);
+  return DocumentListNotifier(repository, ref, inventoryDocsFilterProvider);
+});
+
+final orderFilterProvider = StateProvider<DocumentFilter>((ref) {
+  return const DocumentFilter(types: ['ORDER']);
+});
+
+final ordersProvider =
+    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
+  final repository = ref.watch(stockRepositoryProvider);
+  return DocumentListNotifier(repository, ref, orderFilterProvider);
+});

@@ -3,14 +3,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart'; // Для форматирования чисел
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
-import 'package:intl/intl.dart';
-import 'package:warehousesys/features/stock/presentation/screens/orders_screen.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/add_item_from_stock_dialog.dart';
 import 'package:warehousesys/l10n/app_localizations.dart';
 
@@ -54,14 +53,21 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     
     if (widget.baseDocumentId != null) {
       setState(() => _isInitializingFromBase = true);
-      // Запускаем загрузку после построения первого кадра, чтобы был доступен context для локализации (если нужно)
-      // Но так как текст ошибки внутри метода использует context, лучше вызывать так:
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _populateFromBaseDocument(widget.baseDocumentId!);
       });
     } else {
       _loadDefaultWarehouse();
     }
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _commentController.dispose();
+    _counterpartySearchController.dispose();
+    _counterpartyFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _populateFromBaseDocument(int docId) async {
@@ -73,7 +79,6 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
       setState(() {
         _selectedWarehouseId = baseDoc.warehouseId;
-        // Локализованный комментарий "На основании..."
         _commentController.text = l10n.basedOnDocument(baseDoc.number);
         
         if (baseDoc.counterpartyName != null) {
@@ -105,15 +110,6 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       setState(() => _isInitializingFromBase = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorLoadingBaseDocument(e)), backgroundColor: Colors.red));
     }
-  }
-  
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _commentController.dispose();
-    _counterpartySearchController.dispose();
-    _counterpartyFocusNode.dispose();
-    super.dispose();
   }
 
   void _onCounterpartyFocusChange() {
@@ -194,11 +190,20 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
   bool _validateForm() {
     final l10n = AppLocalizations.of(context)!;
     bool isValid = true;
+    
+    final isInventory = widget.documentType == 'INVENTORY';
+
     setState(() {
       _warehouseError =
           _selectedWarehouseId == null ? l10n.selectWarehouseError : null;
-      _counterpartyError =
-          _selectedCounterparty == null ? l10n.selectCounterpartyError : null;
+      
+      if (!isInventory) {
+        _counterpartyError =
+            _selectedCounterparty == null ? l10n.selectCounterpartyError : null;
+      } else {
+        _counterpartyError = null;
+      }
+      
       _itemsError = _items.isEmpty ? l10n.itemsError : null;
 
       if (_warehouseError != null ||
@@ -223,7 +228,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       final itemMap = {
         'variant_id': item.variantId,
         'quantity': item.quantity.toString(),
-        'price': item.price.toStringAsFixed(2),
+        'price': item.price.toStringAsFixed(2), 
       };
       return itemMap;
     }).toList();
@@ -240,7 +245,6 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
   Future<void> _saveDocument() async {
     if (!_validateForm()) return;
-
     setState(() => _isLoading = true);
     final l10n = AppLocalizations.of(context)!;
     
@@ -249,35 +253,17 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       await ref.read(stockRepositoryProvider).createDocument(payload);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.documentSavedDraft),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.documentSavedDraft), backgroundColor: Colors.green));
       
       ref.invalidate(documentsProvider);
       ref.invalidate(ordersProvider);
+      ref.invalidate(inventoryDocsProvider);
+      
       Navigator.of(context).pop();
 
     } catch (e) {
        if (!mounted) return;
-      String errorMessage = l10n.postError(e);
-      
-      if (e is DioException && e.response?.data != null) {
-        final data = e.response?.data;
-        if (data is Map && data['error'] != null) {
-           errorMessage = data['error'].toString();
-        }
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.saveError(e)), backgroundColor: Colors.red));
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }
@@ -285,7 +271,6 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
   Future<void> _postAndClose() async {
     if (!_validateForm()) return;
-
     setState(() => _isLoading = true);
     final l10n = AppLocalizations.of(context)!;
 
@@ -296,38 +281,25 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       await ref.read(stockRepositoryProvider).postDocument(createdDocument.id);
       
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.documentPostedSuccess),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.documentPostedSuccess), backgroundColor: Colors.green));
       
-      ref.invalidate(ordersProvider);
       ref.invalidate(documentsProvider);
+      ref.invalidate(ordersProvider);
+      ref.invalidate(inventoryDocsProvider);
       ref.invalidate(inventoryProvider);
       
       Navigator.of(context).pop();
 
     } catch (e) {
        if (!mounted) return;
-      
-      String errorMessage = l10n.postError(e);
-      
-      if (e is DioException && e.response?.data != null) {
-        final data = e.response?.data;
-        if (data is Map && data['error'] != null) {
-           errorMessage = data['error'].toString();
-        }
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+       String errorMessage = l10n.postError(e.toString());
+       if (e is DioException && e.response?.data != null) {
+         final data = e.response?.data;
+         if (data is Map && data['error'] != null) {
+            errorMessage = data['error'].toString();
+         }
+       }
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red, duration: const Duration(seconds: 5)));
     } finally {
        if(mounted) setState(() => _isLoading = false);
     }
@@ -338,6 +310,8 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     final textTheme = Theme.of(context).textTheme;
     final double totalSum = _items.fold(0, (sum, item) => sum + item.sum);
     final l10n = AppLocalizations.of(context)!;
+
+    final isInventory = widget.documentType == 'INVENTORY';
 
     if (_isInitializingFromBase) {
       return Scaffold(
@@ -368,9 +342,9 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
               const SizedBox(height: 24),
               _buildCommentSection(context, l10n),
               const SizedBox(height: 24),
-              _buildItemsTable(context, textTheme, l10n),
+              _buildItemsTable(context, textTheme, l10n, isInventory),
               const SizedBox(height: 24),
-              _buildFooter(context, totalSum, l10n),
+              _buildFooter(context, totalSum, l10n, isInventory),
             ],
           ),
         ),
@@ -379,13 +353,19 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
   }
 
   Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+     String title;
+     if (widget.documentType == 'INCOME') title = l10n.createIncomeDocument;
+     else if (widget.documentType == 'OUTCOME') title = l10n.createOutcomeDocument;
+     else if (widget.documentType == 'INVENTORY') title = l10n.createInventory;
+     else title = widget.documentType;
+
      return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         IconButton(
           icon: Icon(PhosphorIconsRegular.arrowLeft, size: 24),
           onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Back', // Можно тоже добавить в локализацию, если критично
+          tooltip: 'Back',
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -393,9 +373,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.documentType == 'INCOME' 
-                  ? l10n.createIncomeDocument 
-                  : l10n.createOutcomeDocument,
+                title,
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
             ],
@@ -407,6 +385,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
   Widget _buildWarehouseCounterpartySection(BuildContext context, AppLocalizations l10n) {
     final warehousesAsync = ref.watch(warehousesProvider);
+    final isInventory = widget.documentType == 'INVENTORY';
     
     return Container(
       padding: const EdgeInsets.all(24),
@@ -414,26 +393,19 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
         color: cardBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _buildWarehouseDropdown(warehousesAsync, l10n),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: _buildCounterpartySearch(l10n),
-              ),
+              Expanded(child: _buildWarehouseDropdown(warehousesAsync, l10n)),
+              
+              if (!isInventory) ...[
+                const SizedBox(width: 24),
+                Expanded(child: _buildCounterpartySearch(l10n)),
+              ],
             ],
           ),
         ],
@@ -445,34 +417,11 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '${l10n.warehouseLabel} *',
-          style: const TextStyle(
-            color: textDarkColor,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text('${l10n.warehouseLabel} *', style: const TextStyle(color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         warehousesAsync.when(
-          loading: () => Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: borderColor),
-            ),
-            child: const Center(child: CircularProgressIndicator()),
-          ),
-          error: (error, stack) => Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red),
-            ),
-            child: Center(child: Text(l10n.errorLoadingWarehouses)),
-          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Text(l10n.errorLoadingWarehouses),
           data: (warehouses) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -481,27 +430,14 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _warehouseError != null ? Colors.red : borderColor,
-                  ),
+                  border: Border.all(color: _warehouseError != null ? Colors.red : borderColor),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
                     value: _selectedWarehouseId,
                     isExpanded: true,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    items: warehouses.map((warehouse) {
-                      return DropdownMenuItem<int>(
-                        value: warehouse.id,
-                        child: Text(
-                          warehouse.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: textDarkColor,
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                    items: warehouses.map((warehouse) => DropdownMenuItem<int>(value: warehouse.id, child: Text(warehouse.name))).toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedWarehouseId = value;
@@ -512,16 +448,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
                 ),
               ),
               if (_warehouseError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    _warehouseError!,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+                Padding(padding: const EdgeInsets.only(top: 4), child: Text(_warehouseError!, style: const TextStyle(color: Colors.red, fontSize: 12))),
             ],
           ),
         ),
@@ -535,81 +462,31 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '${l10n.counterpartyLabel} *',
-          style: const TextStyle(
-            color: textDarkColor,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text('${l10n.counterpartyLabel} *', style: const TextStyle(color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextFormField(
           controller: _counterpartySearchController,
           focusNode: _counterpartyFocusNode,
           onChanged: _onCounterpartySearchChanged,
-          onTap: () {
-            setState(() {
-              _showCounterpartyList = true;
-            });
-          },
+          onTap: () => setState(() => _showCounterpartyList = true),
           decoration: InputDecoration(
             hintText: l10n.searchCounterpartyHint,
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: _counterpartyError != null ? Colors.red : borderColor,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: _counterpartyError != null ? Colors.red : borderColor,
-              ),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: _counterpartyError != null ? Colors.red : borderColor)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: _counterpartyError != null ? Colors.red : borderColor)),
             suffixIcon: _selectedCounterparty != null
-                ? IconButton(
-                    icon: Icon(PhosphorIconsRegular.x, size: 20, color: textGreyColor),
-                    onPressed: () {
-                      setState(() {
-                        _selectedCounterparty = null;
-                        _counterpartySearchController.clear();
-                        _counterpartyError = null;
-                      });
-                    },
-                  )
+                ? IconButton(icon: Icon(PhosphorIconsRegular.x, size: 20, color: textGreyColor), onPressed: () => setState(() { _selectedCounterparty = null; _counterpartySearchController.clear(); _counterpartyError = null; }))
                 : null,
           ),
         ),
         if (_counterpartyError != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              _counterpartyError!,
-              style: const TextStyle(
-                color: Colors.red,
-                fontSize: 12,
-              ),
-            ),
-          ),
+          Padding(padding: const EdgeInsets.only(top: 4), child: Text(_counterpartyError!, style: const TextStyle(color: Colors.red, fontSize: 12))),
         if (_showCounterpartyList && _selectedCounterparty == null)
           Container(
             margin: const EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: borderColor),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(20),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderColor), boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 8, offset: const Offset(0, 4))]),
             constraints: const BoxConstraints(maxHeight: 300),
             child: _buildCounterpartyList(counterpartiesState, l10n),
           ),
@@ -619,10 +496,8 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
   Widget _buildCounterpartyList(CounterpartyListState state, AppLocalizations l10n) {
     final scrollController = ScrollController();
-
     scrollController.addListener(() {
-      if (scrollController.position.pixels >= 
-          scrollController.position.maxScrollExtent - 50) {
+      if (scrollController.position.pixels >= scrollController.position.maxScrollExtent - 50) {
         if (state.hasMore && !state.isLoadingNextPage) {
           ref.read(counterpartiesProvider.notifier).fetchNextPage();
         }
@@ -633,104 +508,50 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: borderColor)),
-          ),
+          decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: borderColor))),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.selectCounterparty,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: textDarkColor,
-                ),
-              ),
-              IconButton(
-                icon: Icon(PhosphorIconsRegular.x, size: 16, color: textGreyColor),
-                onPressed: () {
-                  setState(() {
-                    _showCounterpartyList = false;
-                    _counterpartyFocusNode.unfocus();
-                  });
-                },
-              ),
+              Text(l10n.selectCounterparty, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textDarkColor)),
+              IconButton(icon: Icon(PhosphorIconsRegular.x, size: 16, color: textGreyColor), onPressed: () => setState(() { _showCounterpartyList = false; _counterpartyFocusNode.unfocus(); })),
             ],
           ),
         ),
         Expanded(
           child: state.isLoadingFirstPage
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              : state.error != null && state.counterparties.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(l10n.errorLoadingCounterparties),
+              ? const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+              : state.counterparties.isEmpty
+                  ? Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(l10n.noCounterpartiesFound)))
+                  : Scrollbar(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        shrinkWrap: true,
+                        itemCount: state.counterparties.length + (state.hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == state.counterparties.length) {
+                            return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
+                          }
+                          final counterparty = state.counterparties[index];
+                          return Container(
+                            decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: borderColor))),
+                            child: ListTile(
+                              title: Text(counterparty.name, style: const TextStyle(fontSize: 14)),
+                              subtitle: counterparty.phone != null ? Text(counterparty.phone!, style: const TextStyle(fontSize: 12)) : null,
+                              trailing: Icon(PhosphorIconsRegular.arrowRight, size: 16, color: textGreyColor),
+                              onTap: () {
+                                setState(() {
+                                  _selectedCounterparty = counterparty;
+                                  _counterpartySearchController.text = counterparty.name;
+                                  _counterpartyError = null;
+                                  _showCounterpartyList = false;
+                                  _counterpartyFocusNode.unfocus();
+                                });
+                              },
+                            ),
+                          );
+                        },
                       ),
-                    )
-                  : state.counterparties.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(l10n.noCounterpartiesFound),
-                          ),
-                        )
-                      : Scrollbar(
-                          child: ListView.builder(
-                            controller: scrollController,
-                            shrinkWrap: true,
-                            itemCount: state.counterparties.length + (state.hasMore ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == state.counterparties.length) {
-                                return const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              }
-                              
-                              final counterparty = state.counterparties[index];
-                              return Container(
-                                decoration: const BoxDecoration(
-                                  border: Border(bottom: BorderSide(color: borderColor)),
-                                ),
-                                child: ListTile(
-                                  title: Text(
-                                    counterparty.name,
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                  subtitle: counterparty.phone != null 
-                                      ? Text(
-                                          counterparty.phone!,
-                                          style: const TextStyle(fontSize: 12),
-                                        )
-                                      : null,
-                                  trailing: Icon(
-                                    PhosphorIconsRegular.arrowRight,
-                                    size: 16,
-                                    color: textGreyColor,
-                                  ),
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCounterparty = counterparty;
-                                      _counterpartySearchController.text = counterparty.name;
-                                      _counterpartyError = null;
-                                      _showCounterpartyList = false;
-                                      _counterpartyFocusNode.unfocus();
-                                    });
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                    ),
         ),
       ],
     );
@@ -743,25 +564,12 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
         color: cardBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.commentLabel,
-            style: const TextStyle(
-              color: textDarkColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(l10n.commentLabel, style: const TextStyle(color: textDarkColor, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           TextFormField(
             controller: _commentController,
@@ -771,14 +579,8 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: borderColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: borderColor),
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: borderColor)),
             ),
           ),
         ],
@@ -786,20 +588,14 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
     );
   }
 
-  Widget _buildItemsTable(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
+  Widget _buildItemsTable(BuildContext context, TextTheme textTheme, AppLocalizations l10n, bool isInventory) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       decoration: BoxDecoration(
         color: cardBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Column(
         children: [
@@ -812,19 +608,17 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
                 _TableHeaderCell(l10n.tableSku, flex: 3),
                 _TableHeaderCell(l10n.tableQuantity, flex: 2),
                 _TableHeaderCell(l10n.tableUnit, flex: 2),
-                _TableHeaderCell(l10n.tablePrice, flex: 2),
-                _TableHeaderCell(l10n.tableSum, flex: 2),
+                
+                if (!isInventory) _TableHeaderCell(l10n.tablePrice, flex: 2),
+                if (!isInventory) _TableHeaderCell(l10n.tableSum, flex: 2),
+                
                 const _TableHeaderCell('', flex: 1),
               ],
             ),
           ),
           const Divider(height: 1, color: borderColor),
           if (_items.isEmpty)
-             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Text(l10n.noItemsAdded,
-                  style: const TextStyle(color: textGreyColor)),
-            )
+             Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Text(l10n.noItemsAdded, style: const TextStyle(color: textGreyColor)))
           else
             ..._items.asMap().entries.map((entry) {
               final index = entry.key;
@@ -832,6 +626,8 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
               return _DocumentItemRow(
                 key: ValueKey(item.variantId),
                 item: item,
+                isEditable: true,
+                hidePrice: isInventory,
                 onChanged: (newItem) => _updateItem(index, newItem),
                 onRemove: () => _removeItem(index),
               );
@@ -842,32 +638,20 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
               alignment: Alignment.centerLeft,
               child: ElevatedButton.icon(
                 onPressed: _showAddItemDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor.withOpacity(0.1),
-                  foregroundColor: primaryColor,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: primaryColor.withOpacity(0.1), foregroundColor: primaryColor, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                 icon: Icon(PhosphorIconsRegular.listPlus, size: 20),
                 label: Text(l10n.selectItems),
               ),
             ),
           ),
           if (_itemsError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _itemsError!,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
-              ),
-            ),
+            Padding(padding: const EdgeInsets.only(top: 8), child: Text(_itemsError!, style: const TextStyle(color: Colors.red, fontSize: 12))),
         ],
       ),
     );
   }
 
-  Widget _buildFooter(BuildContext context, double totalSum, AppLocalizations l10n) {
+  Widget _buildFooter(BuildContext context, double totalSum, AppLocalizations l10n, bool isInventory) {
     final numberFormat = NumberFormat('#,##0.00', 'ru_RU');
 
     return Container(
@@ -876,63 +660,32 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
         color: cardBackgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
-              Text(
-                l10n.totalItems(_items.length),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textDarkColor,
-                ),
-              ),
+              Text(l10n.totalItems(_items.length), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textDarkColor)),
               const SizedBox(width: 24),
-              if (_items.isNotEmpty)
-                Text(
-                  l10n.totalSum(numberFormat.format(totalSum)),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: textDarkColor,
-                  ),
-                ),
+              
+              if (!isInventory && _items.isNotEmpty)
+                Text(l10n.totalSum(numberFormat.format(totalSum)), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textDarkColor)),
             ],
           ),
           Row(
             children: [
               OutlinedButton(
                 onPressed: _isLoading ? null : _saveDocument,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  side: const BorderSide(color: borderColor),
-                ),
+                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), side: const BorderSide(color: borderColor)),
                 child: Text(l10n.save),
               ),
               const SizedBox(width: 12),
               FilledButton(
                 onPressed: _isLoading ? null : _postAndClose,
-                style: FilledButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: _isLoading 
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(l10n.postAndClose),
+                style: FilledButton.styleFrom(backgroundColor: primaryColor, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(l10n.postAndClose),
               ),
             ],
           ),
@@ -954,12 +707,7 @@ class _TableHeaderCell extends StatelessWidget {
       flex: flex,
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: textHeaderColor,
-          letterSpacing: 0.5,
-        ),
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textHeaderColor, letterSpacing: 0.5),
       ),
     );
   }
@@ -986,15 +734,7 @@ class DocumentItemRow {
 
   double get sum => quantity * price;
 
-  DocumentItemRow copyWith({
-    int? index,
-    int? variantId,
-    String? productName,
-    String? sku,
-    int? quantity,
-    double? price,
-    String? unit,
-  }) {
+  DocumentItemRow copyWith({int? index, int? variantId, String? productName, String? sku, int? quantity, double? price, String? unit}) {
     return DocumentItemRow(
       index: index ?? this.index,
       variantId: variantId ?? this.variantId,
@@ -1009,12 +749,16 @@ class DocumentItemRow {
 
 class _DocumentItemRow extends StatefulWidget {
   final DocumentItemRow item;
+  final bool isEditable;
+  final bool hidePrice;
   final Function(DocumentItemRow) onChanged;
   final VoidCallback onRemove;
 
   const _DocumentItemRow({
     super.key,
     required this.item,
+    required this.isEditable,
+    this.hidePrice = false,
     required this.onChanged,
     required this.onRemove,
   });
@@ -1030,10 +774,8 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
   @override
   void initState() {
     super.initState();
-    _quantityController =
-        TextEditingController(text: widget.item.quantity.toString());
-    _priceController =
-        TextEditingController(text: widget.item.price.toStringAsFixed(2));
+    _quantityController = TextEditingController(text: widget.item.quantity.toString());
+    _priceController = TextEditingController(text: widget.item.price.toStringAsFixed(2));
   }
 
   @override
@@ -1057,24 +799,17 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
   void _updateFromControllers() {
     final quantity = int.tryParse(_quantityController.text) ?? 0;
     final price = double.tryParse(_priceController.text) ?? 0.0;
-    widget.onChanged(widget.item.copyWith(
-      quantity: quantity,
-      price: price,
-    ));
+    widget.onChanged(widget.item.copyWith(quantity: quantity, price: price));
   }
   
   InputDecoration _textFieldDecoration() {
     return InputDecoration(
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: borderColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: borderColor),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: borderColor)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: borderColor)),
+      filled: true,
+      fillColor: widget.isEditable ? Colors.white : backgroundLightColor.withOpacity(0.5),
     );
   }
 
@@ -1089,31 +824,11 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                flex: 1,
-                child: Center(
-                  child: Text(widget.item.index.toString(),
-                      style: const TextStyle(color: textGreyColor, fontSize: 14)),
-                ),
-              ),
+              Expanded(flex: 1, child: Center(child: Text(widget.item.index.toString(), style: const TextStyle(color: textGreyColor, fontSize: 14)))),
               const SizedBox(width: 8),
-              Expanded(
-                flex: 4,
-                child: Text(
-                  widget.item.productName,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
+              Expanded(flex: 4, child: Text(widget.item.productName, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500))),
               const SizedBox(width: 8),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  widget.item.sku,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: textGreyColor, fontSize: 13),
-                ),
-              ),
+              Expanded(flex: 3, child: Text(widget.item.sku, overflow: TextOverflow.ellipsis, style: const TextStyle(color: textGreyColor, fontSize: 13))),
               const SizedBox(width: 8),
               Expanded(
                 flex: 2,
@@ -1124,44 +839,36 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _textFieldDecoration(),
                   textAlign: TextAlign.right,
+                  readOnly: !widget.isEditable,
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: Center(
-                  child: Text(widget.item.unit,
-                      style: const TextStyle(color: textGreyColor, fontSize: 14)),
+              Expanded(flex: 2, child: Center(child: Text(widget.item.unit, style: const TextStyle(color: textGreyColor, fontSize: 14)))),
+              
+              if (!widget.hidePrice) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _priceController,
+                    onChanged: (_) => _updateFromControllers(),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: _textFieldDecoration(),
+                    textAlign: TextAlign.right,
+                    readOnly: false,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: TextFormField(
-                  controller: _priceController,
-                  onChanged: (_) => _updateFromControllers(),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _textFieldDecoration(),
-                  textAlign: TextAlign.right,
-                  readOnly: false,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  numberFormat.format(widget.item.sum),
-                  textAlign: TextAlign.right,
-                ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(flex: 2, child: Text(numberFormat.format(widget.item.sum), textAlign: TextAlign.right)),
+              ],
+
               const SizedBox(width: 8),
               Expanded(
                 flex: 1,
                 child: Center(
                   child: IconButton(
-                    icon: Icon(PhosphorIconsRegular.trash,
-                        color: Colors.red.shade400, size: 20),
-                    onPressed: widget.onRemove,
+                    icon: Icon(PhosphorIconsRegular.trash, color: widget.isEditable ? Colors.red.shade400 : Colors.grey.shade300, size: 20),
+                    onPressed: widget.isEditable ? widget.onRemove : null,
                     splashRadius: 20,
                   ),
                 ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,8 +19,7 @@ class DocumentDetailsScreen extends ConsumerStatefulWidget {
   const DocumentDetailsScreen({super.key, required this.documentId});
 
   @override
-  ConsumerState<DocumentDetailsScreen> createState() =>
-      _DocumentDetailsScreenState();
+  ConsumerState<DocumentDetailsScreen> createState() => _DocumentDetailsScreenState();
 }
 
 class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
@@ -136,10 +136,8 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
       final itemMap = {
         'variant_id': item.variantId,
         'quantity': item.quantity.toString(),
+        'price': item.price.toStringAsFixed(2),
       };
-      if (originalDoc.type == 'INCOME') {
-        itemMap['price'] = item.price.toStringAsFixed(2);
-      }
       return itemMap;
     }).toList();
 
@@ -187,7 +185,16 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
       ref.invalidate(documentDetailsProvider(widget.documentId));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.postError(e)), backgroundColor: Colors.red));
+      
+      String errorMessage = l10n.postError(e);
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+           errorMessage = data['error'].toString();
+        }
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }
@@ -231,8 +238,6 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final documentAsync = ref.watch(documentDetailsProvider(widget.documentId));
-    // Получаем l10n, но аккуратно, так как внутри when может быть другой контекст, 
-    // поэтому лучше брать здесь, если виджет не перестраивается полностью.
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -248,6 +253,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
           });
           
           final isDraft = doc.status == 'draft';
+          final isInventory = doc.type == 'INVENTORY';
           
           return SingleChildScrollView(
             child: Padding(
@@ -259,11 +265,11 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                     children: [
                       _buildHeader(context, doc, isDraft, l10n),
                       const SizedBox(height: 24),
-                      _buildMainInfoSection(context, doc, isDraft, l10n),
+                      _buildMainInfoSection(context, doc, isDraft, l10n, isInventory),
                       const SizedBox(height: 24),
-                      _buildItemsTable(context, isDraft, l10n),
+                      _buildItemsTable(context, isDraft, l10n, isInventory),
                       const SizedBox(height: 24),
-                      _buildFooter(context, doc, isDraft, l10n),
+                      _buildFooter(context, doc, isDraft, l10n, isInventory),
                     ],
                   ),
             ),
@@ -274,8 +280,12 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
   }
 
   Widget _buildHeader(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n) {
-    String docTypeName = doc.type == 'INCOME' ? l10n.incomeDocument : l10n.outcomeDocument;
-    // Локализация статуса
+    String docTypeName;
+    if (doc.type == 'INCOME') docTypeName = l10n.incomeDocument;
+    else if (doc.type == 'OUTCOME') docTypeName = l10n.outcomeDocument;
+    else if (doc.type == 'INVENTORY') docTypeName = l10n.inventoryDocs;
+    else docTypeName = doc.type;
+
     String statusText = isDraft ? l10n.statusDraft : l10n.statusPosted;
 
     return Row(
@@ -307,7 +317,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
 
-  Widget _buildMainInfoSection(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n) {
+  Widget _buildMainInfoSection(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n, bool isInventory) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -332,10 +342,11 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                 Expanded(
                   child: _buildWarehouseDropdown(isDraft, l10n),
                 ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: _buildCounterpartySearch(isDraft, l10n),
-                ),
+                
+                if (!isInventory) ...[
+                   const SizedBox(width: 24),
+                   Expanded(child: _buildCounterpartySearch(isDraft, l10n)),
+                ],
               ],
             ),
              const SizedBox(height: 24),
@@ -348,7 +359,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                   controller: _commentController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: l10n.commentHint, // Используем "Добавьте комментарий..." из l10n
+                    hintText: l10n.commentHint,
                     filled: true,
                     fillColor: isDraft ? Colors.white : backgroundLightColor,
                   ),
@@ -518,7 +529,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
 
-  Widget _buildItemsTable(BuildContext context, bool isDraft, AppLocalizations l10n) {
+  Widget _buildItemsTable(BuildContext context, bool isDraft, AppLocalizations l10n, bool isInventory) {
     return Container(
        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       decoration: BoxDecoration(
@@ -537,8 +548,10 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                 _TableHeaderCell(l10n.tableSku, flex: 3),
                 _TableHeaderCell(l10n.tableQuantity, flex: 2),
                 _TableHeaderCell(l10n.tableUnit, flex: 2),
-                _TableHeaderCell(l10n.tablePrice, flex: 2),
-                _TableHeaderCell(l10n.tableSum, flex: 2),
+                
+                if (!isInventory) _TableHeaderCell(l10n.tablePrice, flex: 2),
+                if (!isInventory) _TableHeaderCell(l10n.tableSum, flex: 2),
+                
                 const _TableHeaderCell('', flex: 1),
               ],
             ),
@@ -554,6 +567,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                 key: ValueKey("${item.variantId}-${index}"),
                 item: item,
                 isEditable: isDraft,
+                hidePrice: isInventory,
                 onChanged: (newItem) => _updateItem(index, newItem),
                 onRemove: () => _removeItem(index),
               );
@@ -581,7 +595,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     );
   }
 
-  Widget _buildFooter(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n) {
+  Widget _buildFooter(BuildContext context, DocumentDetailsDTO doc, bool isDraft, AppLocalizations l10n, bool isInventory) {
     double totalSum = _items.fold(0, (sum, item) => sum + item.sum);
     final numberFormat = NumberFormat('#,##0.00', 'ru_RU');
     final isOrder = doc.type == 'ORDER';
@@ -596,11 +610,17 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // "Сумма: 1 200 ₽"
-          Text(l10n.totalSum(numberFormat.format(totalSum)), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+               Text(l10n.totalItems(_items.length), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+               const SizedBox(width: 24),
+               
+               if (!isInventory)
+                  Text(l10n.totalSum(numberFormat.format(totalSum)), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
           
           if (isDraft)
-            // Кнопки для черновика (любого типа)
             Row(
               children: [
                 OutlinedButton(onPressed: _isLoading ? null : () => _updateAndSaveChanges(doc), child: Text(l10n.saveChanges)),
@@ -613,7 +633,6 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
               ],
             )
           else if (!isDraft && isOrder)
-            // Кнопка для проведенного ЗАКАЗА
             FilledButton(
               onPressed: () {
                 Navigator.of(context).push(
@@ -628,7 +647,6 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
               child: Text(l10n.createShipment),
             )
           else
-            // Кнопка для всех остальных проведенных документов
             OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.close)),
         ],
       ),
@@ -662,6 +680,7 @@ class _TableHeaderCell extends StatelessWidget {
 class _DocumentItemRow extends StatefulWidget {
   final DocumentItemRow item;
   final bool isEditable;
+  final bool hidePrice;
   final Function(DocumentItemRow) onChanged;
   final VoidCallback onRemove;
 
@@ -669,6 +688,7 @@ class _DocumentItemRow extends StatefulWidget {
     super.key,
     required this.item,
     required this.isEditable,
+    this.hidePrice = false,
     required this.onChanged,
     required this.onRemove,
   });
@@ -758,17 +778,21 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
               )),
               const SizedBox(width: 8),
               Expanded(flex: 2, child: Center(child: Text(item.unit, style: const TextStyle(color: textGreyColor)))),
-              const SizedBox(width: 8),
-              Expanded(flex: 2, child: TextFormField(
-                controller: _priceController,
-                onChanged: (_) => _updateFromControllers(),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: _textFieldDecoration(),
-                textAlign: TextAlign.right,
-                readOnly: !widget.isEditable,
-              )),
-              const SizedBox(width: 8),
-              Expanded(flex: 2, child: Text(numberFormat.format(item.sum), textAlign: TextAlign.right)),
+              
+              if (!widget.hidePrice) ...[
+                const SizedBox(width: 8),
+                Expanded(flex: 2, child: TextFormField(
+                  controller: _priceController,
+                  onChanged: (_) => _updateFromControllers(),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: _textFieldDecoration(),
+                  textAlign: TextAlign.right,
+                  readOnly: !widget.isEditable,
+                )),
+                const SizedBox(width: 8),
+                Expanded(flex: 2, child: Text(numberFormat.format(item.sum), textAlign: TextAlign.right)),
+              ],
+              
               const SizedBox(width: 8),
               Expanded(flex: 1, child: Center(
                 child: IconButton(

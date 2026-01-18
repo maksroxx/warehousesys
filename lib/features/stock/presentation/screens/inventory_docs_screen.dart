@@ -10,23 +10,14 @@ import 'package:warehousesys/features/stock/presentation/screens/create_document
 import 'package:warehousesys/features/stock/presentation/screens/document_details_screen.dart';
 import 'package:warehousesys/l10n/app_localizations.dart';
 
-final orderFilterProvider = StateProvider<DocumentFilter>((ref) {
-  return const DocumentFilter(types: ['ORDER']);
-});
+class InventoryDocsScreen extends ConsumerStatefulWidget {
+  const InventoryDocsScreen({super.key});
 
-final ordersProvider =
-    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
-  final repository = ref.watch(stockRepositoryProvider);
-  return DocumentListNotifier(repository, ref, orderFilterProvider);
-});
-
-class OrdersScreen extends ConsumerStatefulWidget {
-  const OrdersScreen({super.key});
   @override
-  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
+  ConsumerState<InventoryDocsScreen> createState() => _InventoryDocsScreenState();
 }
 
-class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+class _InventoryDocsScreenState extends ConsumerState<InventoryDocsScreen> {
   final _scrollController = ScrollController();
   Timer? _debounce;
 
@@ -36,7 +27,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     _scrollController.addListener(_onScroll);
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.refresh(ordersProvider);
+      ref.refresh(inventoryDocsProvider);
     });
   }
 
@@ -49,15 +40,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      ref.read(ordersProvider.notifier).fetchNextPage();
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      ref.read(inventoryDocsProvider.notifier).fetchNextPage();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final documentsState = ref.watch(ordersProvider);
+    final documentsState = ref.watch(inventoryDocsProvider);
     final textTheme = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context)!;
 
@@ -72,18 +62,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             onChanged: (value) {
               if (_debounce?.isActive ?? false) _debounce!.cancel();
               _debounce = Timer(const Duration(milliseconds: 500), () {
-                ref
-                    .read(orderFilterProvider.notifier)
-                    .update((state) => state.copyWith(search: value));
+                ref.read(inventoryDocsFilterProvider.notifier).update((state) => state.copyWith(search: value));
               });
             },
             decoration: InputDecoration(
-              hintText: l10n.searchOrdersHint,
-              prefixIcon: const Icon(
-                PhosphorIconsRegular.magnifyingGlass,
-                color: textGreyColor,
-                size: 20,
-              ),
+              hintText: l10n.searchInventoryHint,
+              prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: textGreyColor, size: 20),
               fillColor: Theme.of(context).scaffoldBackgroundColor,
             ),
           ),
@@ -98,40 +82,34 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(l10n.orders, style: textTheme.headlineMedium),
+        Text(l10n.inventoryDocs, style: textTheme.headlineMedium),
         ElevatedButton.icon(
-          icon: const Icon(PhosphorIconsRegular.plus, color: Colors.white),
           onPressed: () async {
-             await Navigator.of(context).push(
+            await Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) =>
-                    const CreateDocumentScreen(documentType: 'ORDER'),
+                builder: (context) => const CreateDocumentScreen(documentType: 'INVENTORY'),
               ),
             );
-            ref.refresh(ordersProvider);
+            ref.refresh(inventoryDocsProvider);
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             elevation: 1,
           ),
-          label: Text(l10n.createOrder),
+          icon: const Icon(PhosphorIconsRegular.plus),
+          label: Text(l10n.createInventory),
         ),
       ],
     );
   }
 
   Widget _buildContent(DocumentListState state, AppLocalizations l10n) {
-    if (state.isLoadingFirstPage)
-      return const Center(child: CircularProgressIndicator());
-    if (state.error != null && state.documents.isEmpty)
-      return Center(child: Text('${l10n.error}: ${state.error}'));
-    if (state.documents.isEmpty)
-      return Center(child: Text(l10n.noOrdersFound));
+    if (state.isLoadingFirstPage) return const Center(child: CircularProgressIndicator());
+    if (state.error != null && state.documents.isEmpty) return Center(child: Text('${l10n.error}: ${state.error}'));
+    if (state.documents.isEmpty) return Center(child: Text(l10n.noInventoryFound));
 
     return GridView.builder(
       controller: _scrollController,
@@ -144,22 +122,17 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       itemCount: state.documents.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == state.documents.length) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()));
         }
-        return ShipmentCard(shipment: state.documents[index]);
+        return _InventoryCard(document: state.documents[index]);
       },
     );
   }
 }
 
-class ShipmentCard extends ConsumerWidget {
-  final DocumentListItem shipment;
-  const ShipmentCard({super.key, required this.shipment});
+class _InventoryCard extends ConsumerWidget {
+  final DocumentListItem document;
+  const _InventoryCard({required this.document});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -170,11 +143,9 @@ class ShipmentCard extends ConsumerWidget {
     return InkWell(
       onTap: () async {
         await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => DocumentDetailsScreen(documentId: shipment.id),
-          ),
+          MaterialPageRoute(builder: (context) => DocumentDetailsScreen(documentId: document.id)),
         );
-        ref.refresh(ordersProvider);
+        ref.refresh(inventoryDocsProvider);
       },
       borderRadius: BorderRadius.circular(12),
       hoverColor: primaryColor.withOpacity(0.05),
@@ -192,18 +163,13 @@ class ShipmentCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  shipment.number,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                _StatusChip(status: shipment.status),
+                Text(document.number, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                _StatusChip(status: document.status),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.cardCounterparty(shipment.counterpartyName ?? 'N/A'),
+              "${l10n.tableWarehouse}: ${document.warehouseName ?? '-'}",
               style: textTheme.bodySmall?.copyWith(color: textGreyColor),
               overflow: TextOverflow.ellipsis,
             ),
@@ -211,25 +177,14 @@ class ShipmentCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.cardCreated(dateFormat.format(shipment.createdAt.toLocal())),
-                  style: textTheme.bodySmall?.copyWith(color: textGreyColor),
-                ),
-                Text(
-                  l10n.cardItems(shipment.totalItems),
-                  style: textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(l10n.cardCreated(dateFormat.format(document.createdAt.toLocal())), style: textTheme.bodySmall?.copyWith(color: textGreyColor)),
+                Text(l10n.cardItems(document.totalItems), style: textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
               ],
             ),
             const Spacer(),
             Align(
               alignment: Alignment.centerRight,
-              child: Text(
-                l10n.viewDetails,
-                style: textTheme.bodyMedium?.copyWith(color: primaryColor),
-              ),
+              child: Text(l10n.viewDetails, style: textTheme.bodyMedium?.copyWith(color: primaryColor)),
             ),
           ],
         ),
@@ -245,34 +200,26 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
     Color textColor = textGreyColor;
     Color bgColor = Colors.grey.shade100;
     String text = status;
 
-    if(status == 'posted') {
+    if (status == 'posted') {
       textColor = Colors.green.shade800;
       bgColor = Colors.green.shade100;
       text = l10n.statusPosted;
-    } else if(status == 'draft') {
+    } else if (status == 'draft') {
       textColor = Colors.orange.shade800;
       bgColor = Colors.orange.shade100;
       text = l10n.statusDraft;
-    } else if(status == 'canceled') {
+    } else if (status == 'canceled') {
       textColor = Colors.red.shade800;
       bgColor = Colors.red.shade100;
       text = l10n.statusCanceled;
     }
 
     return Chip(
-      label: Text(
-        text,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-      ),
+      label: Text(text, style: TextStyle(color: textColor, fontWeight: FontWeight.w500, fontSize: 12)),
       backgroundColor: bgColor,
       side: BorderSide.none,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),

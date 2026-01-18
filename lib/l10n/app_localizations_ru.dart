@@ -756,4 +756,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get generateReport => 'Сформировать отчет';
+
+  @override
+  String get inventoryDocs => 'Инвентаризация';
+
+  @override
+  String get createInventory => 'Создать инвентаризацию';
+
+  @override
+  String get searchInventoryHint => 'Поиск инвентаризаций...';
+
+  @override
+  String get noInventoryFound => 'Инвентаризации не найдены.';
 }

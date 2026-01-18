@@ -236,5 +236,10 @@
     "endDate": "Дата окончания",
     "itemFilter": "Фильтр по товару (необязательно)",
     "itemFilterHint": "Введите название или артикул",
-    "generateReport": "Сформировать отчет"
+    "generateReport": "Сформировать отчет",
+
+    "inventoryDocs": "Инвентаризация",
+    "createInventory": "Создать инвентаризацию",
+    "searchInventoryHint": "Поиск инвентаризаций...",
+    "noInventoryFound": "Инвентаризации не найдены."
 }

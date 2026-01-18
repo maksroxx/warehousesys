@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/features/home/presentation/side_navigation_bar.dart';
 import 'package:warehousesys/features/stock/presentation/screens/counterparties_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/home_screen.dart';
+import 'package:warehousesys/features/stock/presentation/screens/inventory_docs_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/reports_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/inventory_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/orders_screen.dart';
@@ -22,14 +23,13 @@ class HomeScreen extends ConsumerWidget {
 
     final pages = <Widget>[
       const DashboardScreen(),
-      // Center(child: Text(l10n.dashboard)), // Индекс 0
-      const InventoryScreen(),             // Индекс 1
-      const OrdersScreen(),                // Индекс 2
-      const ShipmentsScreen(),             // Индекс 3
+      const InventoryScreen(),
+      const OrdersScreen(),
+      const ShipmentsScreen(),
+      const InventoryDocsScreen(),
       const ReportsScreen(),
-      // Center(child: Text(l10n.reports)),   // Индекс 4
-      const CounterpartiesScreen(),        // Индекс 5
-      Center(child: Text(l10n.settings)),  // Индекс 6
+      const CounterpartiesScreen(),
+      Center(child: Text(l10n.settings)),
     ];
 
     return Scaffold(

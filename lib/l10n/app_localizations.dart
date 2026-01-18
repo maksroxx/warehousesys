@@ -1495,6 +1495,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate Report'**
   String get generateReport;
+
+  /// No description provided for @inventoryDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Stocktaking'**
+  String get inventoryDocs;
+
+  /// No description provided for @createInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'New Stocktaking'**
+  String get createInventory;
+
+  /// No description provided for @searchInventoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search stocktaking...'**
+  String get searchInventoryHint;
+
+  /// No description provided for @noInventoryFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No stocktaking documents found.'**
+  String get noInventoryFound;
 }
 
 class _AppLocalizationsDelegate

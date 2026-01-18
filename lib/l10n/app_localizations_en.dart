@@ -754,4 +754,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generateReport => 'Generate Report';
+
+  @override
+  String get inventoryDocs => 'Stocktaking';
+
+  @override
+  String get createInventory => 'New Stocktaking';
+
+  @override
+  String get searchInventoryHint => 'Search stocktaking...';
+
+  @override
+  String get noInventoryFound => 'No stocktaking documents found.';
 }

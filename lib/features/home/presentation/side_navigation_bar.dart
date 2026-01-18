@@ -20,8 +20,9 @@ class SideNavigationBar extends ConsumerWidget {
       {'label': l10n.inventory, 'index': 1, 'iconRegular': PhosphorIconsRegular.package, 'iconFill': PhosphorIconsFill.package},
       {'label': l10n.orders, 'index': 2, 'iconRegular': PhosphorIconsRegular.receipt, 'iconFill': PhosphorIconsFill.receipt},
       {'label': l10n.shipments, 'index': 3, 'iconRegular': PhosphorIconsRegular.truck, 'iconFill': PhosphorIconsFill.truck},
-      {'label': l10n.reports, 'index': 4, 'iconRegular': PhosphorIconsRegular.chartBar, 'iconFill': PhosphorIconsFill.chartBar},
-      {'label': l10n.counterparties, 'index': 5, 'iconRegular': PhosphorIconsRegular.person, 'iconFill': PhosphorIconsFill.person},
+      {'label': l10n.inventoryDocs, 'index': 4, 'iconRegular': PhosphorIconsRegular.clipboardText, 'iconFill': PhosphorIconsFill.clipboardText},
+      {'label': l10n.reports, 'index': 5, 'iconRegular': PhosphorIconsRegular.chartBar, 'iconFill': PhosphorIconsFill.chartBar},
+      {'label': l10n.counterparties, 'index': 6, 'iconRegular': PhosphorIconsRegular.person, 'iconFill': PhosphorIconsFill.person},
     ];
 
     return AnimatedContainer(
@@ -85,10 +86,10 @@ class SideNavigationBar extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: _NavItem(
               label: l10n.settings,
-              icon: selectedIndex == 6 ? PhosphorIconsFill.gear : PhosphorIconsRegular.gear,
-              isSelected: selectedIndex == 6,
+              icon: selectedIndex == 7 ? PhosphorIconsFill.gear : PhosphorIconsRegular.gear,
+              isSelected: selectedIndex == 7,
               isCollapsed: isCollapsed,
-              onTap: () => ref.read(pageProvider.notifier).state = 6,
+              onTap: () => ref.read(pageProvider.notifier).state = 7,
             ),
           ),
         ],

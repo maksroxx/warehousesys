@@ -292,5 +292,10 @@
     "endDate": "End Date",
     "itemFilter": "Item Filter (Optional)",
     "itemFilterHint": "Enter item name or SKU",
-    "generateReport": "Generate Report"
+    "generateReport": "Generate Report",
+
+    "inventoryDocs": "Stocktaking",
+    "createInventory": "New Stocktaking",
+    "searchInventoryHint": "Search stocktaking...",
+    "noInventoryFound": "No stocktaking documents found."
 }
