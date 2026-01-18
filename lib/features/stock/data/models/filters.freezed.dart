@@ -356,6 +356,7 @@ mixin _$Product {
   String? get description => throw _privateConstructorUsedError;
   @JsonKey(name: 'category_id')
   int? get categoryId => throw _privateConstructorUsedError;
+  List<ProductImage> get images => throw _privateConstructorUsedError;
 
   /// Serializes this Product to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -376,6 +377,7 @@ abstract class $ProductCopyWith<$Res> {
     String name,
     String? description,
     @JsonKey(name: 'category_id') int? categoryId,
+    List<ProductImage> images,
   });
 }
 
@@ -398,6 +400,7 @@ class _$ProductCopyWithImpl<$Res, $Val extends Product>
     Object? name = null,
     Object? description = freezed,
     Object? categoryId = freezed,
+    Object? images = null,
   }) {
     return _then(
       _value.copyWith(
@@ -417,6 +420,10 @@ class _$ProductCopyWithImpl<$Res, $Val extends Product>
                 ? _value.categoryId
                 : categoryId // ignore: cast_nullable_to_non_nullable
                       as int?,
+            images: null == images
+                ? _value.images
+                : images // ignore: cast_nullable_to_non_nullable
+                      as List<ProductImage>,
           )
           as $Val,
     );
@@ -436,6 +443,7 @@ abstract class _$$ProductImplCopyWith<$Res> implements $ProductCopyWith<$Res> {
     String name,
     String? description,
     @JsonKey(name: 'category_id') int? categoryId,
+    List<ProductImage> images,
   });
 }
 
@@ -457,6 +465,7 @@ class __$$ProductImplCopyWithImpl<$Res>
     Object? name = null,
     Object? description = freezed,
     Object? categoryId = freezed,
+    Object? images = null,
   }) {
     return _then(
       _$ProductImpl(
@@ -476,6 +485,10 @@ class __$$ProductImplCopyWithImpl<$Res>
             ? _value.categoryId
             : categoryId // ignore: cast_nullable_to_non_nullable
                   as int?,
+        images: null == images
+            ? _value._images
+            : images // ignore: cast_nullable_to_non_nullable
+                  as List<ProductImage>,
       ),
     );
   }
@@ -489,7 +502,8 @@ class _$ProductImpl implements _Product {
     required this.name,
     this.description,
     @JsonKey(name: 'category_id') this.categoryId,
-  });
+    final List<ProductImage> images = const [],
+  }) : _images = images;
 
   factory _$ProductImpl.fromJson(Map<String, dynamic> json) =>
       _$$ProductImplFromJson(json);
@@ -503,10 +517,18 @@ class _$ProductImpl implements _Product {
   @override
   @JsonKey(name: 'category_id')
   final int? categoryId;
+  final List<ProductImage> _images;
+  @override
+  @JsonKey()
+  List<ProductImage> get images {
+    if (_images is EqualUnmodifiableListView) return _images;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_images);
+  }
 
   @override
   String toString() {
-    return 'Product(id: $id, name: $name, description: $description, categoryId: $categoryId)';
+    return 'Product(id: $id, name: $name, description: $description, categoryId: $categoryId, images: $images)';
   }
 
   @override
@@ -519,13 +541,20 @@ class _$ProductImpl implements _Product {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.categoryId, categoryId) ||
-                other.categoryId == categoryId));
+                other.categoryId == categoryId) &&
+            const DeepCollectionEquality().equals(other._images, _images));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, name, description, categoryId);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    name,
+    description,
+    categoryId,
+    const DeepCollectionEquality().hash(_images),
+  );
 
   /// Create a copy of Product
   /// with the given fields replaced by the non-null parameter values.
@@ -547,6 +576,7 @@ abstract class _Product implements Product {
     required final String name,
     final String? description,
     @JsonKey(name: 'category_id') final int? categoryId,
+    final List<ProductImage> images,
   }) = _$ProductImpl;
 
   factory _Product.fromJson(Map<String, dynamic> json) = _$ProductImpl.fromJson;
@@ -560,12 +590,182 @@ abstract class _Product implements Product {
   @override
   @JsonKey(name: 'category_id')
   int? get categoryId;
+  @override
+  List<ProductImage> get images;
 
   /// Create a copy of Product
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ProductImplCopyWith<_$ProductImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ProductImage _$ProductImageFromJson(Map<String, dynamic> json) {
+  return _ProductImage.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ProductImage {
+  int get id => throw _privateConstructorUsedError;
+  String get url => throw _privateConstructorUsedError;
+
+  /// Serializes this ProductImage to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of ProductImage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $ProductImageCopyWith<ProductImage> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ProductImageCopyWith<$Res> {
+  factory $ProductImageCopyWith(
+    ProductImage value,
+    $Res Function(ProductImage) then,
+  ) = _$ProductImageCopyWithImpl<$Res, ProductImage>;
+  @useResult
+  $Res call({int id, String url});
+}
+
+/// @nodoc
+class _$ProductImageCopyWithImpl<$Res, $Val extends ProductImage>
+    implements $ProductImageCopyWith<$Res> {
+  _$ProductImageCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of ProductImage
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? id = null, Object? url = null}) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as int,
+            url: null == url
+                ? _value.url
+                : url // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$ProductImageImplCopyWith<$Res>
+    implements $ProductImageCopyWith<$Res> {
+  factory _$$ProductImageImplCopyWith(
+    _$ProductImageImpl value,
+    $Res Function(_$ProductImageImpl) then,
+  ) = __$$ProductImageImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({int id, String url});
+}
+
+/// @nodoc
+class __$$ProductImageImplCopyWithImpl<$Res>
+    extends _$ProductImageCopyWithImpl<$Res, _$ProductImageImpl>
+    implements _$$ProductImageImplCopyWith<$Res> {
+  __$$ProductImageImplCopyWithImpl(
+    _$ProductImageImpl _value,
+    $Res Function(_$ProductImageImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of ProductImage
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? id = null, Object? url = null}) {
+    return _then(
+      _$ProductImageImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as int,
+        url: null == url
+            ? _value.url
+            : url // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ProductImageImpl implements _ProductImage {
+  const _$ProductImageImpl({required this.id, required this.url});
+
+  factory _$ProductImageImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ProductImageImplFromJson(json);
+
+  @override
+  final int id;
+  @override
+  final String url;
+
+  @override
+  String toString() {
+    return 'ProductImage(id: $id, url: $url)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ProductImageImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.url, url) || other.url == url));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, url);
+
+  /// Create a copy of ProductImage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ProductImageImplCopyWith<_$ProductImageImpl> get copyWith =>
+      __$$ProductImageImplCopyWithImpl<_$ProductImageImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ProductImageImplToJson(this);
+  }
+}
+
+abstract class _ProductImage implements ProductImage {
+  const factory _ProductImage({
+    required final int id,
+    required final String url,
+  }) = _$ProductImageImpl;
+
+  factory _ProductImage.fromJson(Map<String, dynamic> json) =
+      _$ProductImageImpl.fromJson;
+
+  @override
+  int get id;
+  @override
+  String get url;
+
+  /// Create a copy of ProductImage
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ProductImageImplCopyWith<_$ProductImageImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

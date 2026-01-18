@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/dashboard_data.dart';
@@ -24,6 +26,7 @@ abstract class IStockRepository {
   Future<Counterparty> getCounterpartyById(int counterpartyId);
   Future<DashboardData> getDashboardData({int? warehouseId});
   Future<List<Unit>> getUnits();
+  Future<String> uploadImage(File file);
 
   Future<List<int>> downloadReport({
     required String type,
@@ -37,6 +40,7 @@ abstract class IStockRepository {
   Future<void> createProductWithVariant({
     required String productName,
     String? description,
+    List<String> imageUrls = const [],
     required int categoryId,
     required String sku,
     required int unitId,
@@ -57,6 +61,7 @@ abstract class IStockRepository {
     required int productId,
     String? name,
     String? description,
+    List<String>? imageUrls,
     int? categoryId,
   });
   Future<void> updateVariant({
@@ -146,6 +151,7 @@ class StockRepository implements IStockRepository {
   Future<void> createProductWithVariant({
     required String productName,
     String? description,
+    List<String> imageUrls = const [],
     required int categoryId,
     required String sku,
     required int unitId,
@@ -158,6 +164,7 @@ class StockRepository implements IStockRepository {
           'name': productName,
           'category_id': categoryId,
           'description': description,
+          'images': imageUrls,
         },
       );
       final newProductId = productResponse.data['id'];
@@ -289,12 +296,14 @@ class StockRepository implements IStockRepository {
     required int productId,
     String? name,
     String? description,
+    List<String>? imageUrls,
     int? categoryId,
   }) async {
     try {
       final data = <String, dynamic>{};
       if (name != null) data['name'] = name;
       if (description != null) data['description'] = description;
+      if (imageUrls != null) data['images'] = imageUrls;
       if (categoryId != null) data['category_id'] = categoryId;
       if (data.isEmpty) return;
 
@@ -517,6 +526,23 @@ class StockRepository implements IStockRepository {
     } on DioException catch (e) {
       print('Error fetching units: $e');
       rethrow;
+    }
+  }
+
+  @override
+  Future<String> uploadImage(File file) async {
+    try {
+      String fileName = file.path.split('/').last;
+      
+      FormData formData = FormData.fromMap({
+        "file": await MultipartFile.fromFile(file.path, filename: fileName),
+      });
+      
+      final response = await _dio.post('/upload', data: formData);
+      
+      return response.data['url'];
+    } on DioException catch (e) {
+      throw Exception('Failed to upload image: ${e.message}');
     }
   }
 }

@@ -30,6 +30,11 @@ _$ProductImpl _$$ProductImplFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       description: json['description'] as String?,
       categoryId: (json['category_id'] as num?)?.toInt(),
+      images:
+          (json['images'] as List<dynamic>?)
+              ?.map((e) => ProductImage.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$$ProductImplToJson(_$ProductImpl instance) =>
@@ -38,7 +43,17 @@ Map<String, dynamic> _$$ProductImplToJson(_$ProductImpl instance) =>
       'name': instance.name,
       'description': instance.description,
       'category_id': instance.categoryId,
+      'images': instance.images,
     };
+
+_$ProductImageImpl _$$ProductImageImplFromJson(Map<String, dynamic> json) =>
+    _$ProductImageImpl(
+      id: (json['id'] as num).toInt(),
+      url: json['url'] as String,
+    );
+
+Map<String, dynamic> _$$ProductImageImplToJson(_$ProductImageImpl instance) =>
+    <String, dynamic>{'id': instance.id, 'url': instance.url};
 
 _$CharacteristicTypeImpl _$$CharacteristicTypeImplFromJson(
   Map<String, dynamic> json,

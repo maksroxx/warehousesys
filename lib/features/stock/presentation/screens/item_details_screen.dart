@@ -9,6 +9,7 @@ import 'package:warehousesys/features/stock/presentation/widgets/add_item_dialog
 import 'package:warehousesys/features/stock/presentation/screens/document_details_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/document_preview_dialog.dart';
+import 'package:warehousesys/features/stock/presentation/widgets/product_image_carousel.dart';
 import 'package:warehousesys/l10n/app_localizations.dart';
 
 class ItemDetailsScreen extends ConsumerWidget {
@@ -142,49 +143,95 @@ class _LeftColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final productDetailsAsync = ref.watch(detailedProductProvider(item.productId));
+    final productDetailsAsync =
+        ref.watch(detailedProductProvider(item.productId));
     final l10n = AppLocalizations.of(context)!;
 
-    return _InfoCard(
-      title: l10n.detailedInformation,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          productDetailsAsync.when(
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
-            error: (e, s) => Center(child: Text(l10n.errorLoadingDescription(e))),
-            data: (product) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (product.description?.isNotEmpty == true) ...[
-                    _SectionHeader(l10n.description),
-                    Text(product.description!, style: const TextStyle(color: textGreyColor, height: 1.5)),
-                    const SizedBox(height: 24),
-                  ],
-                  _SectionHeader(l10n.attributes),
-                  _AttributeTableRow(l10n.category, item.categoryName),
-                  const Divider(height: 24),
-                  _AttributeTableRow(l10n.unit, item.unitName),
-                ],
-              );
-            },
+    return Column(
+      children: [
+        productDetailsAsync.when(
+          loading: () => const SizedBox(
+            height: 280,
+            child: Center(child: CircularProgressIndicator()),
           ),
-          if (item.characteristics != null && item.characteristics!.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            _SectionHeader(l10n.characteristics),
-            ...item.characteristics!.entries.map((entry) {
-              final isLast = entry.key == item.characteristics!.entries.last.key;
-              return Column(
-                children: [
-                  _AttributeTableRow(entry.key, entry.value),
-                  if (!isLast) const Divider(height: 24),
-                ],
-              );
-            }),
-          ]
-        ],
-      ),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (product) {
+            if (product.images.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: ProductImageCarousel(
+                imageUrls: product.images.map((e) => e.url).toList(),
+                height: 280,
+                autoPlay: false,
+              ),
+            );
+          },
+        ),
+
+        _InfoCard(
+          title: l10n.detailedInformation,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              productDetailsAsync.when(
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                error: (e, s) =>
+                    Center(child: Text(l10n.errorLoadingDescription(e))),
+                data: (product) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (product.description?.isNotEmpty == true) ...[
+                        _SectionHeader(l10n.description),
+                        Text(
+                          product.description!,
+                          style: const TextStyle(
+                            color: textGreyColor,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                      _SectionHeader(l10n.attributes),
+                      _AttributeTableRow(
+                        l10n.category,
+                        item.categoryName,
+                      ),
+                      const Divider(height: 24),
+                      _AttributeTableRow(
+                        l10n.unit,
+                        item.unitName,
+                      ),
+                    ],
+                  );
+                },
+              ),
+              if (item.characteristics != null &&
+                  item.characteristics!.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _SectionHeader(l10n.characteristics),
+                ...item.characteristics!.entries.map((entry) {
+                  final isLast = entry.key ==
+                      item.characteristics!.entries.last.key;
+                  return Column(
+                    children: [
+                      _AttributeTableRow(entry.key, entry.value),
+                      if (!isLast) const Divider(height: 24),
+                    ],
+                  );
+                }),
+              ]
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -35,9 +35,20 @@ class Product with _$Product {
     required String name,
     String? description,
     @JsonKey(name: 'category_id') int? categoryId,
+    @Default([]) List<ProductImage> images, 
   }) = _Product;
 
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
+}
+
+@freezed
+class ProductImage with _$ProductImage {
+  const factory ProductImage({
+    required int id,
+    required String url,
+  }) = _ProductImage;
+
+  factory ProductImage.fromJson(Map<String, dynamic> json) => _$ProductImageFromJson(json);
 }
 
 @freezed
