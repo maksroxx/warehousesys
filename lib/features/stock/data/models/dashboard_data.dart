@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'dashboard_data.freezed.dart';
@@ -8,20 +10,16 @@ class DashboardData with _$DashboardData {
   const factory DashboardData({
     @JsonKey(name: 'total_stock') required String totalStock,
     
-    // Новые метрики здоровья склада
     @JsonKey(name: 'total_variants') required int totalVariants,
     @JsonKey(name: 'items_in_stock') required int itemsInStock,
     @JsonKey(name: 'low_stock_count') required int lowStockCount,
     
-    // Общая активность
     @JsonKey(name: 'total_items_count') required int totalItemsCount,
     @JsonKey(name: 'recent_operations') required int recentOperations,
     
-    // Движения за сегодня
     @JsonKey(name: 'incoming_today') required String incomingToday,
     @JsonKey(name: 'outgoing_today') required String outgoingToday,
     
-    // График и список
     @JsonKey(name: 'chart_data') @Default([]) List<ChartPoint> chartData,
     @JsonKey(name: 'recent_movements') @Default([]) List<MovementShort> recentMovements,
   }) = _DashboardData;

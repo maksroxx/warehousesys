@@ -22,21 +22,21 @@ DashboardData _$DashboardDataFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$DashboardData {
   @JsonKey(name: 'total_stock')
-  String get totalStock => throw _privateConstructorUsedError; // Новые метрики здоровья склада
+  String get totalStock => throw _privateConstructorUsedError;
   @JsonKey(name: 'total_variants')
   int get totalVariants => throw _privateConstructorUsedError;
   @JsonKey(name: 'items_in_stock')
   int get itemsInStock => throw _privateConstructorUsedError;
   @JsonKey(name: 'low_stock_count')
-  int get lowStockCount => throw _privateConstructorUsedError; // Общая активность
+  int get lowStockCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'total_items_count')
   int get totalItemsCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'recent_operations')
-  int get recentOperations => throw _privateConstructorUsedError; // Движения за сегодня
+  int get recentOperations => throw _privateConstructorUsedError;
   @JsonKey(name: 'incoming_today')
   String get incomingToday => throw _privateConstructorUsedError;
   @JsonKey(name: 'outgoing_today')
-  String get outgoingToday => throw _privateConstructorUsedError; // График и список
+  String get outgoingToday => throw _privateConstructorUsedError;
   @JsonKey(name: 'chart_data')
   List<ChartPoint> get chartData => throw _privateConstructorUsedError;
   @JsonKey(name: 'recent_movements')
@@ -266,7 +266,6 @@ class _$DashboardDataImpl implements _DashboardData {
   @override
   @JsonKey(name: 'total_stock')
   final String totalStock;
-  // Новые метрики здоровья склада
   @override
   @JsonKey(name: 'total_variants')
   final int totalVariants;
@@ -276,23 +275,19 @@ class _$DashboardDataImpl implements _DashboardData {
   @override
   @JsonKey(name: 'low_stock_count')
   final int lowStockCount;
-  // Общая активность
   @override
   @JsonKey(name: 'total_items_count')
   final int totalItemsCount;
   @override
   @JsonKey(name: 'recent_operations')
   final int recentOperations;
-  // Движения за сегодня
   @override
   @JsonKey(name: 'incoming_today')
   final String incomingToday;
   @override
   @JsonKey(name: 'outgoing_today')
   final String outgoingToday;
-  // График и список
   final List<ChartPoint> _chartData;
-  // График и список
   @override
   @JsonKey(name: 'chart_data')
   List<ChartPoint> get chartData {
@@ -396,7 +391,7 @@ abstract class _DashboardData implements DashboardData {
 
   @override
   @JsonKey(name: 'total_stock')
-  String get totalStock; // Новые метрики здоровья склада
+  String get totalStock;
   @override
   @JsonKey(name: 'total_variants')
   int get totalVariants;
@@ -405,19 +400,19 @@ abstract class _DashboardData implements DashboardData {
   int get itemsInStock;
   @override
   @JsonKey(name: 'low_stock_count')
-  int get lowStockCount; // Общая активность
+  int get lowStockCount;
   @override
   @JsonKey(name: 'total_items_count')
   int get totalItemsCount;
   @override
   @JsonKey(name: 'recent_operations')
-  int get recentOperations; // Движения за сегодня
+  int get recentOperations;
   @override
   @JsonKey(name: 'incoming_today')
   String get incomingToday;
   @override
   @JsonKey(name: 'outgoing_today')
-  String get outgoingToday; // График и список
+  String get outgoingToday;
   @override
   @JsonKey(name: 'chart_data')
   List<ChartPoint> get chartData;

@@ -143,83 +143,73 @@ class _LeftColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final productDetailsAsync =
-        ref.watch(detailedProductProvider(item.productId));
+    final productDetailsAsync = ref.watch(detailedProductProvider(item.productId));
     final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
-        productDetailsAsync.when(
-          loading: () => const SizedBox(
-            height: 280,
-            child: Center(child: CircularProgressIndicator()),
+        if (item.images.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(bottom: 24),
+            child: ProductImageCarousel(
+              imageUrls: item.images.map((img) => img.url).toList(),
+              height: 400,
+              autoPlay: false,
+            ),
+          )
+        else
+          Container(
+            height: 200,
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 24),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(PhosphorIconsRegular.image, size: 48, color: Colors.grey.shade300),
+                const SizedBox(height: 8),
+                const Text("Нет изображений", style: TextStyle(color: Colors.grey)),
+              ],
+            ),
           ),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (product) {
-            if (product.images.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: ProductImageCarousel(
-                imageUrls: product.images.map((e) => e.url).toList(),
-                height: 280,
-                autoPlay: false,
-              ),
-            );
-          },
-        ),
-
+        
+        // ИНФОРМАЦИЯ
         _InfoCard(
           title: l10n.detailedInformation,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Описание грузится отдельно
               productDetailsAsync.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                error: (e, s) =>
-                    Center(child: Text(l10n.errorLoadingDescription(e))),
+                loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
+                error: (e, s) => Center(child: Text(l10n.errorLoadingDescription(e))),
                 data: (product) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (product.description?.isNotEmpty == true) ...[
                         _SectionHeader(l10n.description),
-                        Text(
-                          product.description!,
-                          style: const TextStyle(
-                            color: textGreyColor,
-                            height: 1.5,
-                          ),
-                        ),
+                        Text(product.description!, style: const TextStyle(color: textGreyColor, height: 1.5, fontSize: 15)),
                         const SizedBox(height: 24),
                       ],
                       _SectionHeader(l10n.attributes),
-                      _AttributeTableRow(
-                        l10n.category,
-                        item.categoryName,
-                      ),
+                      _AttributeTableRow(l10n.category, item.categoryName),
                       const Divider(height: 24),
-                      _AttributeTableRow(
-                        l10n.unit,
-                        item.unitName,
-                      ),
+                      _AttributeTableRow(l10n.unit, item.unitName),
                     ],
                   );
                 },
               ),
-              if (item.characteristics != null &&
-                  item.characteristics!.isNotEmpty) ...[
+              
+              if (item.characteristics != null && item.characteristics!.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 _SectionHeader(l10n.characteristics),
                 ...item.characteristics!.entries.map((entry) {
-                  final isLast = entry.key ==
-                      item.characteristics!.entries.last.key;
+                  final isLast = entry.key == item.characteristics!.entries.last.key;
                   return Column(
                     children: [
                       _AttributeTableRow(entry.key, entry.value),

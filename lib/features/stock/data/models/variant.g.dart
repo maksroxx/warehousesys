@@ -26,6 +26,15 @@ Map<String, dynamic> _$$VariantFilterImplToJson(_$VariantFilterImpl instance) =>
       'offset': instance.offset,
     };
 
+_$ProductImageImpl _$$ProductImageImplFromJson(Map<String, dynamic> json) =>
+    _$ProductImageImpl(
+      id: (json['id'] as num).toInt(),
+      url: json['url'] as String,
+    );
+
+Map<String, dynamic> _$$ProductImageImplToJson(_$ProductImageImpl instance) =>
+    <String, dynamic>{'id': instance.id, 'url': instance.url};
+
 _$InventoryItemImpl _$$InventoryItemImplFromJson(Map<String, dynamic> json) =>
     _$InventoryItemImpl(
       id: (json['id'] as num).toInt(),
@@ -40,6 +49,11 @@ _$InventoryItemImpl _$$InventoryItemImplFromJson(Map<String, dynamic> json) =>
       characteristics: (json['characteristics'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, e as String),
       ),
+      images:
+          (json['images'] as List<dynamic>?)
+              ?.map((e) => ProductImage.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$$InventoryItemImplToJson(_$InventoryItemImpl instance) =>
@@ -54,4 +68,5 @@ Map<String, dynamic> _$$InventoryItemImplToJson(_$InventoryItemImpl instance) =>
       'unit_name': instance.unitName,
       'quantity_on_stock': instance.quantityOnStock,
       'characteristics': instance.characteristics,
+      'images': instance.images,
     };

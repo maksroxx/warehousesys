@@ -40,11 +40,11 @@ abstract class IStockRepository {
   Future<void> createProductWithVariant({
     required String productName,
     String? description,
-    List<String> imageUrls = const [],
     required int categoryId,
     required String sku,
     required int unitId,
     required Map<String, String> characteristics,
+    List<String> imageUrls = const [],
   });
 
   Future<void> createVariant({
@@ -52,6 +52,7 @@ abstract class IStockRepository {
     required String sku,
     required int unitId,
     required Map<String, String> characteristics,
+    List<String> imageUrls = const [],
   });
 
   Future<Category> createCategory(String name);
@@ -61,13 +62,13 @@ abstract class IStockRepository {
     required int productId,
     String? name,
     String? description,
-    List<String>? imageUrls,
     int? categoryId,
   });
   Future<void> updateVariant({
     required int variantId,
     required String sku,
     required Map<String, String> characteristics,
+    List<String>? imageUrls,
   });
   Future<void> updateCounterparty(Counterparty counterparty);
 
@@ -76,7 +77,10 @@ abstract class IStockRepository {
 
   Future<DocumentListItem> createDocument(Map<String, dynamic> data);
   Future<void> postDocument(int documentId);
-  Future<DocumentListItem> updateDocument(int documentId, Map<String, dynamic> data);
+  Future<DocumentListItem> updateDocument(
+    int documentId,
+    Map<String, dynamic> data,
+  );
   Future<void> deleteDocument(int documentId);
 }
 
@@ -151,34 +155,56 @@ class StockRepository implements IStockRepository {
   Future<void> createProductWithVariant({
     required String productName,
     String? description,
-    List<String> imageUrls = const [],
     required int categoryId,
     required String sku,
     required int unitId,
     required Map<String, String> characteristics,
+    List<String> imageUrls = const [],
   }) async {
-    try {
-      final productResponse = await _dio.post(
-        '/stock/products',
-        data: {
-          'name': productName,
-          'category_id': categoryId,
-          'description': description,
-          'images': imageUrls,
-        },
-      );
-      final newProductId = productResponse.data['id'];
-      await createVariant(
-        productId: newProductId,
-        sku: sku,
-        unitId: unitId,
-        characteristics: characteristics,
-      );
-    } on DioException catch (e) {
-      print('Error creating product with variant: $e');
-      rethrow;
-    }
+    await _dio.post(
+      '/stock/products',
+      data: {
+        'name': productName,
+        'category_id': categoryId,
+        'description': description,
+        'sku': sku,
+        'unit_id': unitId,
+        'characteristics': characteristics,
+        'images': imageUrls,
+      },
+    );
   }
+  // Future<void> createProductWithVariant({
+  //   required String productName,
+  //   String? description,
+  //   List<String> imageUrls = const [],
+  //   required int categoryId,
+  //   required String sku,
+  //   required int unitId,
+  //   required Map<String, String> characteristics,
+  // }) async {
+  //   try {
+  //     final productResponse = await _dio.post(
+  //       '/stock/products',
+  //       data: {
+  //         'name': productName,
+  //         'category_id': categoryId,
+  //         'description': description,
+  //         'images': imageUrls,
+  //       },
+  //     );
+  //     final newProductId = productResponse.data['id'];
+  //     await createVariant(
+  //       productId: newProductId,
+  //       sku: sku,
+  //       unitId: unitId,
+  //       characteristics: characteristics,
+  //     );
+  //   } on DioException catch (e) {
+  //     print('Error creating product with variant: $e');
+  //     rethrow;
+  //   }
+  // }
 
   @override
   Future<void> createVariant({
@@ -186,6 +212,7 @@ class StockRepository implements IStockRepository {
     required String sku,
     required int unitId,
     required Map<String, String> characteristics,
+    List<String> imageUrls = const [],
   }) async {
     try {
       await _dio.post(
@@ -195,6 +222,7 @@ class StockRepository implements IStockRepository {
           'sku': sku,
           'unit_id': unitId,
           'characteristics': characteristics,
+          'images': imageUrls,
         },
       );
     } on DioException catch (e) {
@@ -303,10 +331,9 @@ class StockRepository implements IStockRepository {
       final data = <String, dynamic>{};
       if (name != null) data['name'] = name;
       if (description != null) data['description'] = description;
-      if (imageUrls != null) data['images'] = imageUrls;
       if (categoryId != null) data['category_id'] = categoryId;
-      if (data.isEmpty) return;
 
+      if (data.isEmpty) return;
       await _dio.put('/stock/products/$productId', data: data);
     } on DioException catch (e) {
       print('Error updating product: $e');
@@ -319,16 +346,17 @@ class StockRepository implements IStockRepository {
     required int variantId,
     required String sku,
     required Map<String, String> characteristics,
+    List<String>? imageUrls,
   }) async {
-    try {
-      await _dio.put(
-        '/stock/variants/$variantId',
-        data: {'sku': sku, 'characteristics': characteristics},
-      );
-    } on DioException catch (e) {
-      print('Error updating variant: $e');
-      rethrow;
+    final data = <String, dynamic>{
+      'sku': sku,
+      'characteristics': characteristics,
+    };
+    if (imageUrls != null) {
+      data['images'] = imageUrls;
     }
+
+    await _dio.put('/stock/variants/$variantId', data: data);
   }
 
   @override
@@ -464,9 +492,15 @@ class StockRepository implements IStockRepository {
   }
 
   @override
-  Future<DocumentListItem> updateDocument(int documentId, Map<String, dynamic> data) async {
+  Future<DocumentListItem> updateDocument(
+    int documentId,
+    Map<String, dynamic> data,
+  ) async {
     try {
-      final response = await _dio.put('/stock/documents/$documentId', data: data);
+      final response = await _dio.put(
+        '/stock/documents/$documentId',
+        data: data,
+      );
       return DocumentListItem.fromJson(response.data);
     } on DioException catch (e) {
       print('Error updating document: $e');
@@ -487,8 +521,11 @@ class StockRepository implements IStockRepository {
   @override
   Future<DashboardData> getDashboardData({int? warehouseId}) async {
     final params = <String, dynamic>{};
-    if (warehouseId != null) params['warehouse_id'] = warehouseId;    
-    final response = await _dio.get('/analytics/dashboard', queryParameters: params);
+    if (warehouseId != null) params['warehouse_id'] = warehouseId;
+    final response = await _dio.get(
+      '/analytics/dashboard',
+      queryParameters: params,
+    );
     return DashboardData.fromJson(response.data);
   }
 
@@ -533,13 +570,13 @@ class StockRepository implements IStockRepository {
   Future<String> uploadImage(File file) async {
     try {
       String fileName = file.path.split('/').last;
-      
+
       FormData formData = FormData.fromMap({
         "file": await MultipartFile.fromFile(file.path, filename: fileName),
       });
-      
+
       final response = await _dio.post('/upload', data: formData);
-      
+
       return response.data['url'];
     } on DioException catch (e) {
       throw Exception('Failed to upload image: ${e.message}');

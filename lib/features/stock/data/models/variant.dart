@@ -44,6 +44,16 @@ extension VariantFilterX on VariantFilter {
 }
 
 @freezed
+class ProductImage with _$ProductImage {
+  const factory ProductImage({
+    required int id,
+    required String url,
+  }) = _ProductImage;
+
+  factory ProductImage.fromJson(Map<String, dynamic> json) => _$ProductImageFromJson(json);
+}
+
+@freezed
 class InventoryItem with _$InventoryItem {
   const factory InventoryItem({
     required int id,
@@ -54,14 +64,15 @@ class InventoryItem with _$InventoryItem {
     @JsonKey(name: 'category_name') required String categoryName,
 
     required String sku,
-    
-    @JsonKey(name: 'unit_id') required int unitId, 
+    @JsonKey(name: 'unit_id') required int unitId,
     @JsonKey(name: 'unit_name') required String unitName,
     
     @JsonKey(name: 'quantity_on_stock', defaultValue: "0")
         required String quantityOnStock,
 
     final Map<String, String>? characteristics,
+    
+    @Default([]) List<ProductImage> images,
   }) = _InventoryItem;
 
   factory InventoryItem.fromJson(Map<String, dynamic> json) =>

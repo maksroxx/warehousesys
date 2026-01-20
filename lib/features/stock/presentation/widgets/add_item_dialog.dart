@@ -44,11 +44,12 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   
   bool _isLoading = false;
   bool _isAddingCategory = false;
+  
   Map<String, String> _suggestedCharacteristicsValues = {};
 
   final ImagePicker _picker = ImagePicker();
-  List<String> _serverImageUrls = [];
-  List<File> _newImageFiles = []; 
+  List<String> _serverImageUrls = []; 
+  List<File> _newImageFiles = [];     
   
   final String _baseUrl = 'http://localhost:8080';
 
@@ -61,19 +62,42 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       _skuController.text = item.sku;
       _selectedCategoryId = item.categoryId;
       _selectedUnitId = item.unitId;
+      _serverImageUrls = item.images.map((img) => img.url).toList();
 
       ref.read(detailedProductProvider(item.productId).future).then((product) {
         if (mounted) {
           setState(() {
             _descriptionController.text = product.description ?? '';
-            _serverImageUrls = product.images.map((i) => i.url).toList();
           });
         }
       });
 
-      if (item.characteristics != null) {
-        _suggestedCharacteristicsValues = Map.from(item.characteristics!);
-      }
+      ref.read(productOptionsProvider(item.productId).future).then((optionsDto) {
+        if (!mounted) return;
+
+        final standardKeys = optionsDto.options.map((o) => o.type).toSet();
+        
+        setState(() {
+          for (var f in _customCharacteristicFields) {
+            f.dispose();
+          }
+          _customCharacteristicFields.clear();
+          _suggestedCharacteristicsValues.clear();
+
+          if (item.characteristics != null) {
+            item.characteristics!.forEach((key, value) {
+              if (standardKeys.contains(key)) {
+                _suggestedCharacteristicsValues[key] = value;
+              } else {
+                final field = CharacteristicField();
+                field.keyController.text = key;
+                field.valueController.text = value;
+                _customCharacteristicFields.add(field);
+              }
+            });
+          }
+        });
+      });
     }
   }
 
@@ -150,7 +174,6 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
         final url = await ref.read(stockRepositoryProvider).uploadImage(file);
         uploadedUrls.add(url);
       }
-      
       final allImages = [..._serverImageUrls, ...uploadedUrls];
 
       final characteristics = {..._suggestedCharacteristicsValues};
@@ -167,12 +190,12 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 name: _nameController.text,
                 description: _descriptionController.text,
                 categoryId: _selectedCategoryId,
-                imageUrls: allImages,
               ),
           ref.read(stockRepositoryProvider).updateVariant(
                 variantId: widget.itemToEdit!.id,
                 sku: _skuController.text,
                 characteristics: characteristics,
+                imageUrls: allImages,
               ),
         ]);
       } else {
@@ -182,13 +205,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 sku: _skuController.text,
                 unitId: _selectedUnitId!,
                 characteristics: characteristics,
-              );
-          if (allImages.isNotEmpty) {
-               await ref.read(stockRepositoryProvider).updateProduct(
-                productId: _selectedProduct!.id,
                 imageUrls: allImages,
               );
-          }
         } else {
           await ref.read(stockRepositoryProvider).createProductWithVariant(
                 productName: _nameController.text,
@@ -196,8 +214,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 description: _descriptionController.text,
                 sku: _skuController.text,
                 unitId: _selectedUnitId!,
-                imageUrls: allImages,
                 characteristics: characteristics,
+                imageUrls: allImages,
               );
         }
       }
@@ -213,7 +231,10 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       ref.invalidate(productsProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isEditMode ? l10n.itemUpdatedSuccess : l10n.itemAddedSuccess), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text(isEditMode ? l10n.itemUpdatedSuccess : l10n.itemAddedSuccess),
+          backgroundColor: Colors.green,
+        ),
       );
       Navigator.of(context).pop();
 
@@ -236,7 +257,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  
+
   Future<void> _handleAddNewCategory() async {
     final name = _newCategoryController.text;
     final l10n = AppLocalizations.of(context)!;
@@ -297,7 +318,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                         ),
                         const SizedBox(height: 24),
                         
-                        _buildImagesSection(),
+                        _buildImagesSection(), 
                         const SizedBox(height: 24),
 
                         if (isEditMode)
@@ -402,8 +423,9 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                           _descriptionController.clear();
                           _selectedCategoryId = null;
                           _suggestedCharacteristicsValues.clear();
+                          _customCharacteristicFields.clear();
                           _skuController.clear();
-                          _serverImageUrls.clear();
+                          _serverImageUrls.clear(); 
                         }),
                       )
                     : null,
@@ -412,14 +434,19 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 if (product == null) return;
                 ref.read(detailedProductProvider(product.id).future).then((detailedProduct) {
                   if (!mounted) return;
-                  setState(() {
-                    _selectedProduct = detailedProduct;
-                    _nameController.text = detailedProduct.name;
-                    _descriptionController.text = detailedProduct.description ?? '';
-                    _selectedCategoryId = detailedProduct.categoryId;
-                    _serverImageUrls = detailedProduct.images.map((i) => i.url).toList();
-                    _suggestedCharacteristicsValues.clear();
-                    _skuController.clear();
+                  
+                  ref.read(productOptionsProvider(product.id).future).then((options) {
+                       setState(() {
+                         _selectedProduct = detailedProduct;
+                         _nameController.text = detailedProduct.name;
+                         _descriptionController.text = detailedProduct.description ?? '';
+                         _selectedCategoryId = detailedProduct.categoryId;
+                         _serverImageUrls = [];
+                         
+                         _suggestedCharacteristicsValues.clear();
+                         _customCharacteristicFields.clear();
+                         _skuController.clear();
+                       });
                   });
                 });
               },
@@ -515,11 +542,12 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
             loading: () => const SizedBox.shrink(),
             error: (e,s) => Text("${l10n.error}: $e"),
             data: (units) => DropdownButtonFormField<int>(
-              value: _selectedUnitId,
+              initialValue: _selectedUnitId,
               hint: const Text("Выберите ед. изм."),
               decoration: baseInputDecoration,
               items: units.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))).toList(),
               onChanged: (val) => setState(() => _selectedUnitId = val),
+              validator: (v) => v == null ? l10n.requiredField : null,
             ),
           ),
         ),
@@ -534,15 +562,6 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                 loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
                 error: (e, s) => Text('${l10n.error}: $e'),
                 data: (data) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (!mounted) return;
-                    if (_descriptionController.text.isEmpty) {
-                      _descriptionController.text = data.product.description ?? '';
-                    }
-                    if (data.variants.isNotEmpty && _skuController.text.length <= tempProduct.name.length + 1) {
-                      _skuController.text = data.variants.first.sku;
-                    }
-                  });
                   if (data.options.isEmpty && _customCharacteristicFields.isEmpty) {
                     return Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(l10n.noCharacteristicsYet, style: const TextStyle(color: textGreyColor)));
                   }
@@ -592,6 +611,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   Widget _buildEditColumn(BuildContext context, InputDecoration baseInputDecoration, AppLocalizations l10n) {
     final unitsAsync = ref.watch(unitsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final tempProduct = Product(id: widget.itemToEdit!.productId, name: widget.itemToEdit!.productName);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,6 +693,31 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
 
         const SizedBox(height: 24),
         _SectionHeader(l10n.characteristicsSection, isSubHeader: true),
+        Consumer(
+          builder: (context, ref, child) {
+            final optionsAsync = ref.watch(productOptionsProvider(tempProduct.id));
+            return optionsAsync.when(
+              loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
+              error: (e, s) => Text('${l10n.error}: $e'),
+              data: (data) {
+                if (data.options.isEmpty && _customCharacteristicFields.isEmpty) {
+                  return Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(l10n.noCharacteristicsYet, style: const TextStyle(color: textGreyColor)));
+                }
+                return Column(
+                  children: data.options.map((option) => _FormEntry(
+                          label: option.type,
+                          child: TextFormField(
+                            initialValue: _suggestedCharacteristicsValues[option.type],
+                            decoration: baseInputDecoration.copyWith(hintText: l10n.valueFor(option.type)),
+                            onChanged: (value) => setState(() => _suggestedCharacteristicsValues[option.type] = value),
+                          ),
+                        )).toList(),
+                );
+              },
+            );
+          },
+        ),
+        
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -730,7 +775,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       ),
     );
   }
-
+  
   Widget _buildSeparator(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),

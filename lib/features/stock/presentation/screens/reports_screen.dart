@@ -62,6 +62,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       'title': 'Продажи по клиентам',
       'desc': 'Рейтинг покупателей по объему выручки и количеству сделок.'
     },
+    {
+      'id': 'abc',
+      'icon': PhosphorIconsFill.chartLineUp,
+      'color': Colors.redAccent,
+      'title': 'Рейтинг продаж (ABC)',
+      'desc': 'Топ товаров по выручке. Класс А - лидеры (80% выручки), В - середина, С - аутсайдеры.'
+    },
   ];
 
   @override
@@ -449,12 +456,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                     style: ButtonStyle(
                                       visualDensity: VisualDensity.compact,
                                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      backgroundColor: MaterialStateProperty.resolveWith((states) {
-                                         if (states.contains(MaterialState.selected)) return primaryColor.withOpacity(0.1);
+                                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                                         if (states.contains(WidgetState.selected)) return primaryColor.withOpacity(0.1);
                                          return null;
                                       }),
-                                      foregroundColor: MaterialStateProperty.resolveWith((states) {
-                                         if (states.contains(MaterialState.selected)) return primaryColor;
+                                      foregroundColor: WidgetStateProperty.resolveWith((states) {
+                                         if (states.contains(WidgetState.selected)) return primaryColor;
                                          return textDarkColor;
                                       }),
                                     ),
