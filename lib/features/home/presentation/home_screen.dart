@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/features/home/presentation/side_navigation_bar.dart';
+import 'package:warehousesys/features/settings/presentation/settings_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/counterparties_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/home_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/inventory_docs_screen.dart';
@@ -8,9 +9,8 @@ import 'package:warehousesys/features/stock/presentation/screens/reports_screen.
 import 'package:warehousesys/features/stock/presentation/screens/inventory_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/orders_screen.dart';
 import 'package:warehousesys/features/stock/presentation/screens/shipments_screen.dart';
-import 'package:warehousesys/l10n/app_localizations.dart';
 
-final pageProvider = StateProvider<int>((ref) => 1); // 1 = Inventory
+final pageProvider = StateProvider<int>((ref) => 0);
 final sideBarCollapsedProvider = StateProvider<bool>((ref) => false);
 
 class HomeScreen extends ConsumerWidget {
@@ -19,7 +19,6 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(pageProvider);
-    final l10n = AppLocalizations.of(context)!;
 
     final pages = <Widget>[
       const DashboardScreen(),
@@ -29,7 +28,7 @@ class HomeScreen extends ConsumerWidget {
       const InventoryDocsScreen(),
       const ReportsScreen(),
       const CounterpartiesScreen(),
-      Center(child: Text(l10n.settings)),
+      const SettingsScreen(),
     ];
 
     return Scaffold(

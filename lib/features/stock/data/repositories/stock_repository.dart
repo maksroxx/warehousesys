@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:warehousesys/features/auth/data/models/user_model.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/dashboard_data.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
@@ -82,6 +83,34 @@ abstract class IStockRepository {
     Map<String, dynamic> data,
   );
   Future<void> deleteDocument(int documentId);
+
+  Future<List<User>> getUsers();
+  Future<void> createUser({
+    required String name,
+    required String email,
+    required String password,
+    required int roleId,
+  });
+  Future<void> deleteUser(int userId);
+
+  Future<List<Role>> getRoles();
+  Future<void> createRole({required String name, required List<String> permissions});
+
+  Future<void> updateUser({
+    required int userId,
+    required String name,
+    required String email,
+    String? password,
+    required int roleId,
+  });
+
+  Future<void> updateRole({
+    required int roleId,
+    required String name,
+    required List<String> permissions,
+  });
+
+  Future<void> deleteRole(int roleId);
 }
 
 class StockRepository implements IStockRepository {
@@ -580,6 +609,122 @@ class StockRepository implements IStockRepository {
       return response.data['url'];
     } on DioException catch (e) {
       throw Exception('Failed to upload image: ${e.message}');
+    }
+  }
+
+  @override
+  Future<List<User>> getUsers() async {
+    try {
+      final response = await _dio.get('/users');
+      final List<dynamic> data = response.data;
+      return data.map((json) => User.fromJson(json)).toList();
+    } on DioException catch (e) {
+      print('Error fetching users: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> createUser({
+    required String name,
+    required String email,
+    required String password,
+    required int roleId,
+  }) async {
+    try {
+      await _dio.post('/users', data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'role_id': roleId,
+      });
+    } on DioException catch (e) {
+      print('Error creating user: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteUser(int userId) async {
+    try {
+      await _dio.delete('/users/$userId');
+    } on DioException catch (e) {
+      print('Error deleting user: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<Role>> getRoles() async {
+    try {
+      final response = await _dio.get('/roles');
+      final List<dynamic> data = response.data;
+      return data.map((json) => Role.fromJson(json)).toList();
+    } on DioException catch (e) {
+      print('Error fetching roles: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> createRole({required String name, required List<String> permissions}) async {
+    try {
+      await _dio.post('/roles', data: {
+        'name': name,
+        'permissions': permissions,
+      });
+    } on DioException catch (e) {
+      print('Error creating role: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> updateUser({
+    required int userId,
+    required String name,
+    required String email,
+    String? password,
+    required int roleId,
+  }) async {
+    try {
+      final data = {
+        'name': name,
+        'email': email,
+        'role_id': roleId,
+      };
+      if (password != null && password.isNotEmpty) {
+        data['password'] = password;
+      }
+      
+      await _dio.put('/users/$userId', data: data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Failed to update user');
+    }
+  }
+
+  @override
+  Future<void> updateRole({
+    required int roleId,
+    required String name,
+    required List<String> permissions,
+  }) async {
+    try {
+      await _dio.put('/roles/$roleId', data: {
+        'name': name,
+        'permissions': permissions,
+      });
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Failed to update role');
+    }
+  }
+
+  @override
+  Future<void> deleteRole(int roleId) async {
+    try {
+      await _dio.delete('/roles/$roleId');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Failed to delete role');
     }
   }
 }

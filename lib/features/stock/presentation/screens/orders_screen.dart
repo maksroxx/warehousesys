@@ -1,9 +1,12 @@
+// ignore_for_file: unused_result, deprecated_member_use
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/widgets/permission_guard.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/features/stock/presentation/screens/create_document_screen.dart';
@@ -15,10 +18,12 @@ final orderFilterProvider = StateProvider<DocumentFilter>((ref) {
 });
 
 final ordersProvider =
-    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((ref) {
-  final repository = ref.watch(stockRepositoryProvider);
-  return DocumentListNotifier(repository, ref, orderFilterProvider);
-});
+    StateNotifierProvider.autoDispose<DocumentListNotifier, DocumentListState>((
+      ref,
+    ) {
+      final repository = ref.watch(stockRepositoryProvider);
+      return DocumentListNotifier(repository, ref, orderFilterProvider);
+    });
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -34,7 +39,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.refresh(ordersProvider);
     });
@@ -94,44 +99,52 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
+  Widget _buildHeader(
+    BuildContext context,
+    TextTheme textTheme,
+    AppLocalizations l10n,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(l10n.orders, style: textTheme.headlineMedium),
-        ElevatedButton.icon(
-          icon: const Icon(PhosphorIconsRegular.plus, color: Colors.white),
-          onPressed: () async {
-             await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    const CreateDocumentScreen(documentType: 'ORDER'),
+        PermissionGuard(
+          permission: 'create_document',
+          child: ElevatedButton.icon(
+            icon: const Icon(PhosphorIconsRegular.plus, color: Colors.white),
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const CreateDocumentScreen(documentType: 'ORDER'),
+                ),
+              );
+              ref.refresh(ordersProvider);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            );
-            ref.refresh(ordersProvider);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              elevation: 1,
             ),
-            elevation: 1,
+            label: Text(l10n.createOrder),
           ),
-          label: Text(l10n.createOrder),
         ),
       ],
     );
   }
 
   Widget _buildContent(DocumentListState state, AppLocalizations l10n) {
-    if (state.isLoadingFirstPage)
+    if (state.isLoadingFirstPage) {
       return const Center(child: CircularProgressIndicator());
-    if (state.error != null && state.documents.isEmpty)
+    }
+    if (state.error != null && state.documents.isEmpty) {
       return Center(child: Text('${l10n.error}: ${state.error}'));
-    if (state.documents.isEmpty)
-      return Center(child: Text(l10n.noOrdersFound));
+    }
+    if (state.documents.isEmpty) return Center(child: Text(l10n.noOrdersFound));
 
     return GridView.builder(
       controller: _scrollController,
@@ -171,7 +184,8 @@ class ShipmentCard extends ConsumerWidget {
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => DocumentDetailsScreen(documentId: shipment.id),
+            builder: (context) =>
+                DocumentDetailsScreen(documentId: shipment.id),
           ),
         );
         ref.refresh(ordersProvider);
@@ -212,7 +226,9 @@ class ShipmentCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  l10n.cardCreated(dateFormat.format(shipment.createdAt.toLocal())),
+                  l10n.cardCreated(
+                    dateFormat.format(shipment.createdAt.toLocal()),
+                  ),
                   style: textTheme.bodySmall?.copyWith(color: textGreyColor),
                 ),
                 Text(
@@ -245,20 +261,20 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     Color textColor = textGreyColor;
     Color bgColor = Colors.grey.shade100;
     String text = status;
 
-    if(status == 'posted') {
+    if (status == 'posted') {
       textColor = Colors.green.shade800;
       bgColor = Colors.green.shade100;
       text = l10n.statusPosted;
-    } else if(status == 'draft') {
+    } else if (status == 'draft') {
       textColor = Colors.orange.shade800;
       bgColor = Colors.orange.shade100;
       text = l10n.statusDraft;
-    } else if(status == 'canceled') {
+    } else if (status == 'canceled') {
       textColor = Colors.red.shade800;
       bgColor = Colors.red.shade100;
       text = l10n.statusCanceled;

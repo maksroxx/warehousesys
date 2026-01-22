@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, curly_braces_in_flow_control_structures
 
 import 'dart:async';
 import 'package:dio/dio.dart';
@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/widgets/permission_guard.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
@@ -341,9 +342,9 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
     AppLocalizations l10n,
   ) {
     String docTypeName;
-    if (doc.type == 'INCOME')
+    if (doc.type == 'INCOME') {
       docTypeName = l10n.incomeDocument;
-    else if (doc.type == 'OUTCOME')
+    } else if (doc.type == 'OUTCOME')
       docTypeName = l10n.outcomeDocument;
     else if (doc.type == 'INVENTORY')
       docTypeName = l10n.inventoryDocs;
@@ -754,7 +755,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
               final index = entry.key;
               final item = entry.value;
               return _DocumentItemRow(
-                key: ValueKey("${item.variantId}-${index}"),
+                key: ValueKey("${item.variantId}-$index"),
                 item: item,
                 isEditable: isDraft,
                 hidePrice: isInventory,
@@ -838,20 +839,23 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
                   child: Text(l10n.saveChanges),
                 ),
                 const SizedBox(width: 12),
-                FilledButton.icon(
-                  icon: _isLoading
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                  label: _isLoading
-                      ? Text(l10n.processing)
-                      : Text(l10n.postDocument),
-                  onPressed: _isLoading ? null : _postDocument,
+                PermissionGuard(
+                  permission: 'approve_document',
+                  child: FilledButton.icon(
+                    icon: _isLoading
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                    label: _isLoading
+                        ? Text(l10n.processing)
+                        : Text(l10n.postDocument),
+                    onPressed: _isLoading ? null : _postDocument,
+                  ),
                 ),
               ],
             )

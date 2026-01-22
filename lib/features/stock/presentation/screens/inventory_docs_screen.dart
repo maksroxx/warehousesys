@@ -1,9 +1,12 @@
+// ignore_for_file: unused_result, deprecated_member_use
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/widgets/permission_guard.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/features/stock/presentation/screens/create_document_screen.dart';
@@ -14,7 +17,8 @@ class InventoryDocsScreen extends ConsumerStatefulWidget {
   const InventoryDocsScreen({super.key});
 
   @override
-  ConsumerState<InventoryDocsScreen> createState() => _InventoryDocsScreenState();
+  ConsumerState<InventoryDocsScreen> createState() =>
+      _InventoryDocsScreenState();
 }
 
 class _InventoryDocsScreenState extends ConsumerState<InventoryDocsScreen> {
@@ -25,7 +29,7 @@ class _InventoryDocsScreenState extends ConsumerState<InventoryDocsScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.refresh(inventoryDocsProvider);
     });
@@ -40,7 +44,8 @@ class _InventoryDocsScreenState extends ConsumerState<InventoryDocsScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       ref.read(inventoryDocsProvider.notifier).fetchNextPage();
     }
   }
@@ -62,12 +67,18 @@ class _InventoryDocsScreenState extends ConsumerState<InventoryDocsScreen> {
             onChanged: (value) {
               if (_debounce?.isActive ?? false) _debounce!.cancel();
               _debounce = Timer(const Duration(milliseconds: 500), () {
-                ref.read(inventoryDocsFilterProvider.notifier).update((state) => state.copyWith(search: value));
+                ref
+                    .read(inventoryDocsFilterProvider.notifier)
+                    .update((state) => state.copyWith(search: value));
               });
             },
             decoration: InputDecoration(
               hintText: l10n.searchInventoryHint,
-              prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: textGreyColor, size: 20),
+              prefixIcon: const Icon(
+                PhosphorIconsRegular.magnifyingGlass,
+                color: textGreyColor,
+                size: 20,
+              ),
               fillColor: Theme.of(context).scaffoldBackgroundColor,
             ),
           ),
@@ -78,38 +89,54 @@ class _InventoryDocsScreenState extends ConsumerState<InventoryDocsScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
+  Widget _buildHeader(
+    BuildContext context,
+    TextTheme textTheme,
+    AppLocalizations l10n,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(l10n.inventoryDocs, style: textTheme.headlineMedium),
-        ElevatedButton.icon(
-          onPressed: () async {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const CreateDocumentScreen(documentType: 'INVENTORY'),
+        PermissionGuard(
+          permission: 'create_document',
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const CreateDocumentScreen(documentType: 'INVENTORY'),
+                ),
+              );
+              ref.refresh(inventoryDocsProvider);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            );
-            ref.refresh(inventoryDocsProvider);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            elevation: 1,
+              elevation: 1,
+            ),
+            icon: const Icon(PhosphorIconsRegular.plus),
+            label: Text(l10n.createInventory),
           ),
-          icon: const Icon(PhosphorIconsRegular.plus),
-          label: Text(l10n.createInventory),
         ),
       ],
     );
   }
 
   Widget _buildContent(DocumentListState state, AppLocalizations l10n) {
-    if (state.isLoadingFirstPage) return const Center(child: CircularProgressIndicator());
-    if (state.error != null && state.documents.isEmpty) return Center(child: Text('${l10n.error}: ${state.error}'));
-    if (state.documents.isEmpty) return Center(child: Text(l10n.noInventoryFound));
+    if (state.isLoadingFirstPage) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state.error != null && state.documents.isEmpty) {
+      return Center(child: Text('${l10n.error}: ${state.error}'));
+    }
+    if (state.documents.isEmpty) {
+      return Center(child: Text(l10n.noInventoryFound));
+    }
 
     return GridView.builder(
       controller: _scrollController,
@@ -122,7 +149,12 @@ class _InventoryDocsScreenState extends ConsumerState<InventoryDocsScreen> {
       itemCount: state.documents.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == state.documents.length) {
-          return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()));
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
         return _InventoryCard(document: state.documents[index]);
       },
@@ -143,7 +175,10 @@ class _InventoryCard extends ConsumerWidget {
     return InkWell(
       onTap: () async {
         await Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => DocumentDetailsScreen(documentId: document.id)),
+          MaterialPageRoute(
+            builder: (context) =>
+                DocumentDetailsScreen(documentId: document.id),
+          ),
         );
         ref.refresh(inventoryDocsProvider);
       },
@@ -163,7 +198,12 @@ class _InventoryCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(document.number, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  document.number,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 _StatusChip(status: document.status),
               ],
             ),
@@ -177,14 +217,27 @@ class _InventoryCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(l10n.cardCreated(dateFormat.format(document.createdAt.toLocal())), style: textTheme.bodySmall?.copyWith(color: textGreyColor)),
-                Text(l10n.cardItems(document.totalItems), style: textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+                Text(
+                  l10n.cardCreated(
+                    dateFormat.format(document.createdAt.toLocal()),
+                  ),
+                  style: textTheme.bodySmall?.copyWith(color: textGreyColor),
+                ),
+                Text(
+                  l10n.cardItems(document.totalItems),
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
             const Spacer(),
             Align(
               alignment: Alignment.centerRight,
-              child: Text(l10n.viewDetails, style: textTheme.bodyMedium?.copyWith(color: primaryColor)),
+              child: Text(
+                l10n.viewDetails,
+                style: textTheme.bodyMedium?.copyWith(color: primaryColor),
+              ),
             ),
           ],
         ),
@@ -219,7 +272,14 @@ class _StatusChip extends StatelessWidget {
     }
 
     return Chip(
-      label: Text(text, style: TextStyle(color: textColor, fontWeight: FontWeight.w500, fontSize: 12)),
+      label: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+      ),
       backgroundColor: bgColor,
       side: BorderSide.none,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),

@@ -1,6 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:warehousesys/core/network/dio_provider.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/dashboard_data.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
@@ -13,18 +13,23 @@ import 'package:warehousesys/features/stock/data/repositories/stock_repository.d
 
 part 'stock_providers.freezed.dart';
 
-final dioProvider = Provider<Dio>((ref) {
-  final options = BaseOptions(
-    // baseUrl: 'http://192.168.1.149:8080/api/v1',
-    baseUrl: 'http://localhost:8080/api/v1',
-    listFormat: ListFormat.multi,
-  );
-  return Dio(options);
-});
+// final dioProvider = Provider<Dio>((ref) {
+//   final options = BaseOptions(
+//     // baseUrl: 'http://192.168.1.149:8080/api/v1',
+//     baseUrl: 'http://localhost:8080/api/v1',
+//     listFormat: ListFormat.multi,
+//   );
+//   return Dio(options);
+// });
 
-final stockRepositoryProvider = Provider<IStockRepository>(
-  (ref) => StockRepository(ref.watch(dioProvider)),
-);
+// final stockRepositoryProvider = Provider<IStockRepository>(
+//   (ref) => StockRepository(ref.watch(dioProvider)),
+// );
+
+final stockRepositoryProvider = Provider<IStockRepository>((ref) {
+  final dio = ref.watch(dioProvider);
+  return StockRepository(dio);
+});
 
 final documentFilterProvider = StateProvider<DocumentFilter>((ref) {
   return const DocumentFilter(types: ['OUTCOME', 'INCOME']);
