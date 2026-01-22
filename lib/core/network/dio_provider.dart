@@ -4,7 +4,7 @@ import 'package:warehousesys/core/network/token_storage.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
-    baseUrl: 'http://localhost:8080/api/v1',
+    baseUrl: 'http://127.0.0.1:8080/api/v1',
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
   ));

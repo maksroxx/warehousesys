@@ -22,7 +22,7 @@ class ProductImageCarousel extends StatefulWidget {
 class _ProductImageCarouselState extends State<ProductImageCarousel> {
   int _currentIndex = 0;
   final CarouselSliderController _controller = CarouselSliderController();
-  final String baseUrl = 'http://localhost:8080';
+  final String baseUrl = 'http://127.0.0.1:8080';
 
   @override
   Widget build(BuildContext context) {

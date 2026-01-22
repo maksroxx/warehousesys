@@ -51,7 +51,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   List<String> _serverImageUrls = []; 
   List<File> _newImageFiles = [];     
   
-  final String _baseUrl = 'http://localhost:8080';
+  final String _baseUrl = 'http://127.0.0.1:8080';
 
   @override
   void initState() {
