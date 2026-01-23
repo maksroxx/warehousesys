@@ -4,21 +4,30 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/features/auth/presentation/auth_provider.dart';
 import 'package:warehousesys/features/settings/presentation/users_roles_manager.dart';
+import 'package:warehousesys/features/settings/presentation/warehouses_categories_manager.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasUserManagePerm = ref.watch(authProvider.notifier).hasPermission('manage_users');
+    final hasUserManagePerm = ref
+        .watch(authProvider.notifier)
+        .hasPermission('manage_users');
+    final hasWarehousePerm = ref
+        .watch(authProvider.notifier)
+        .hasPermission('manage_warehouses');
+    final hasCategoryPerm = ref
+        .watch(authProvider.notifier)
+        .hasPermission('manage_categories');
 
     final List<Widget> settingsWidgets = [
-      
       if (hasUserManagePerm)
         _SettingsWidgetCard(
           title: 'Пользователи и Права',
           icon: PhosphorIconsRegular.users,
-          description: 'Управление ролями сотрудников и настройка доступа к модулям системы.',
+          description:
+              'Управление ролями сотрудников и настройка доступа к модулям системы.',
           points: const [
             'Создание и удаление учетных записей',
             'Настройка ролей (Администратор, Кладовщик)',
@@ -34,6 +43,42 @@ class SettingsScreen extends ConsumerWidget {
               label: 'Роли',
               onTap: () => _openUserManager(context, initialTab: 1),
               isPrimary: true,
+            ),
+          ],
+        ),
+
+      if (hasWarehousePerm)
+        _SettingsWidgetCard(
+          title: 'Склады',
+          icon: PhosphorIconsRegular.warehouse,
+          description: 'Добавление и удаление складских помещений.',
+          points: const ['Список активных складов', 'Адреса и реквизиты'],
+          actions: [
+            _WidgetAction(
+              label: 'Управление',
+              onTap: () => showDialog(
+                context: context,
+                builder: (_) => const WarehousesManagerDialog(),
+              ),
+              isPrimary: true,
+            ),
+          ],
+        ),
+
+      if (hasCategoryPerm)
+        _SettingsWidgetCard(
+          title: 'Категории товаров',
+          icon: PhosphorIconsRegular.tag,
+          description: 'Справочник категорий для группировки номенклатуры.',
+          points: const ['Создание новых категорий', 'Редактирование названий'],
+          actions: [
+            _WidgetAction(
+              label: 'Редактировать',
+              onTap: () => showDialog(
+                context: context,
+                builder: (_) => const CategoriesManagerDialog(),
+              ),
+              isPrimary: false,
             ),
           ],
         ),
@@ -82,13 +127,15 @@ class SettingsScreen extends ConsumerWidget {
 
             LayoutBuilder(
               builder: (context, constraints) {
-                final int crossAxisCount = (constraints.maxWidth / 400).floor().clamp(1, 4);
-                
+                final int crossAxisCount = (constraints.maxWidth / 400)
+                    .floor()
+                    .clamp(1, 4);
+
                 return GridView.count(
                   crossAxisCount: crossAxisCount,
                   crossAxisSpacing: 24,
                   mainAxisSpacing: 24,
-                  childAspectRatio: 1.3, 
+                  childAspectRatio: 1.3,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: settingsWidgets,
@@ -149,25 +196,29 @@ class _SettingsWidgetCardState extends State<_SettingsWidgetCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        transform: _isHovered ? Matrix4.translationValues(0, -4, 0) : Matrix4.identity(),
+        transform: _isHovered
+            ? Matrix4.translationValues(0, -4, 0)
+            : Matrix4.identity(),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _isHovered ? primaryColor.withOpacity(0.3) : borderColor),
+          border: Border.all(
+            color: _isHovered ? primaryColor.withOpacity(0.3) : borderColor,
+          ),
           boxShadow: _isHovered
               ? [
                   BoxShadow(
                     color: primaryColor.withOpacity(0.08),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
-                  )
+                  ),
                 ]
               : [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ],
         ),
         padding: const EdgeInsets.all(24),
@@ -180,7 +231,11 @@ class _SettingsWidgetCardState extends State<_SettingsWidgetCard> {
                 Expanded(
                   child: Text(
                     widget.title,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDarkColor),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textDarkColor,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -195,45 +250,60 @@ class _SettingsWidgetCardState extends State<_SettingsWidgetCard> {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             Text(
               widget.description,
-              style: const TextStyle(fontSize: 14, color: textHeaderColor, height: 1.4),
+              style: const TextStyle(
+                fontSize: 14,
+                color: textHeaderColor,
+                height: 1.4,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 16),
             const Divider(height: 1, color: borderColor),
             const SizedBox(height: 16),
-            
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: widget.points.map((point) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 6.0, right: 8.0),
-                        child: Icon(Icons.circle, size: 4, color: textGreyColor),
-                      ),
-                      Expanded(
-                        child: Text(
-                          point, 
-                          style: const TextStyle(fontSize: 13, color: textGreyColor),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                children: widget.points
+                    .map(
+                      (point) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 6.0, right: 8.0),
+                              child: Icon(
+                                Icons.circle,
+                                size: 4,
+                                color: textGreyColor,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                point,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: textGreyColor,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                )).toList(),
+                    )
+                    .toList(),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: widget.actions.map((action) {
@@ -249,18 +319,34 @@ class _SettingsWidgetCardState extends State<_SettingsWidgetCard> {
                             backgroundColor: primaryColor,
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                           child: Text(action.label),
                         )
                       : OutlinedButton(
                           onPressed: action.onTap,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: isDestructive ? Colors.red : textHeaderColor,
-                            side: BorderSide(color: isDestructive ? Colors.red.withOpacity(0.3) : borderColor),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            foregroundColor: isDestructive
+                                ? Colors.red
+                                : textHeaderColor,
+                            side: BorderSide(
+                              color: isDestructive
+                                  ? Colors.red.withOpacity(0.3)
+                                  : borderColor,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                           child: Text(action.label),
                         ),

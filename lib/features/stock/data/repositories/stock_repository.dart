@@ -111,6 +111,14 @@ abstract class IStockRepository {
   });
 
   Future<void> deleteRole(int roleId);
+  
+  Future<void> createUnit(String name);
+  
+  Future<void> createWarehouse(String name, String address);
+  Future<void> deleteWarehouse(int id);
+
+  Future<void> updateCategory(int id, String name);
+  Future<void> deleteCategory(int id);
 }
 
 class StockRepository implements IStockRepository {
@@ -725,6 +733,54 @@ class StockRepository implements IStockRepository {
       await _dio.delete('/roles/$roleId');
     } on DioException catch (e) {
       throw Exception(e.response?.data['error'] ?? 'Failed to delete role');
+    }
+  }
+  
+@override
+  Future<void> createUnit(String name) async {
+    try {
+      await _dio.post('/stock/units', data: {'name': name});
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Не удалось создать единицу измерения');
+    }
+  }
+
+  @override
+  Future<void> createWarehouse(String name, String address) async {
+    try {
+      await _dio.post('/stock/warehouses', data: {
+        'name': name,
+        'address': address,
+      });
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Не удалось создать склад');
+    }
+  }
+
+  @override
+  Future<void> updateCategory(int id, String name) async {
+    try {
+      await _dio.put('/stock/categories/$id', data: {'name': name});
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Не удалось обновить категорию');
+    }
+  }
+
+  @override
+  Future<void> deleteCategory(int id) async {
+    try {
+      await _dio.delete('/stock/categories/$id');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Не удалось удалить категорию');
+    }
+  }
+
+  @override
+  Future<void> deleteWarehouse(int id) async {
+    try {
+      await _dio.delete('/stock/warehouses/$id');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['error'] ?? 'Не удалось удалить склад');
     }
   }
 }

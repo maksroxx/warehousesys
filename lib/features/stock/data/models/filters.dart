@@ -22,6 +22,7 @@ class Warehouse with _$Warehouse {
   const factory Warehouse({
     required int id,
     required String name,
+    String? address,
   }) = _Warehouse;
 
   factory Warehouse.fromJson(Map<String, dynamic> json) => _$WarehouseFromJson(json);

@@ -13,19 +13,6 @@ import 'package:warehousesys/features/stock/data/repositories/stock_repository.d
 
 part 'stock_providers.freezed.dart';
 
-// final dioProvider = Provider<Dio>((ref) {
-//   final options = BaseOptions(
-//     // baseUrl: 'http://192.168.1.149:8080/api/v1',
-//     baseUrl: 'http://localhost:8080/api/v1',
-//     listFormat: ListFormat.multi,
-//   );
-//   return Dio(options);
-// });
-
-// final stockRepositoryProvider = Provider<IStockRepository>(
-//   (ref) => StockRepository(ref.watch(dioProvider)),
-// );
-
 final stockRepositoryProvider = Provider<IStockRepository>((ref) {
   final dio = ref.watch(dioProvider);
   return StockRepository(dio);

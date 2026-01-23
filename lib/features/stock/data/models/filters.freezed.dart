@@ -187,6 +187,7 @@ Warehouse _$WarehouseFromJson(Map<String, dynamic> json) {
 mixin _$Warehouse {
   int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
+  String? get address => throw _privateConstructorUsedError;
 
   /// Serializes this Warehouse to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -203,7 +204,7 @@ abstract class $WarehouseCopyWith<$Res> {
   factory $WarehouseCopyWith(Warehouse value, $Res Function(Warehouse) then) =
       _$WarehouseCopyWithImpl<$Res, Warehouse>;
   @useResult
-  $Res call({int id, String name});
+  $Res call({int id, String name, String? address});
 }
 
 /// @nodoc
@@ -220,7 +221,11 @@ class _$WarehouseCopyWithImpl<$Res, $Val extends Warehouse>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? id = null, Object? name = null}) {
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? address = freezed,
+  }) {
     return _then(
       _value.copyWith(
             id: null == id
@@ -231,6 +236,10 @@ class _$WarehouseCopyWithImpl<$Res, $Val extends Warehouse>
                 ? _value.name
                 : name // ignore: cast_nullable_to_non_nullable
                       as String,
+            address: freezed == address
+                ? _value.address
+                : address // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -246,7 +255,7 @@ abstract class _$$WarehouseImplCopyWith<$Res>
   ) = __$$WarehouseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int id, String name});
+  $Res call({int id, String name, String? address});
 }
 
 /// @nodoc
@@ -262,7 +271,11 @@ class __$$WarehouseImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? id = null, Object? name = null}) {
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? address = freezed,
+  }) {
     return _then(
       _$WarehouseImpl(
         id: null == id
@@ -273,6 +286,10 @@ class __$$WarehouseImplCopyWithImpl<$Res>
             ? _value.name
             : name // ignore: cast_nullable_to_non_nullable
                   as String,
+        address: freezed == address
+            ? _value.address
+            : address // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -281,7 +298,7 @@ class __$$WarehouseImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$WarehouseImpl implements _Warehouse {
-  const _$WarehouseImpl({required this.id, required this.name});
+  const _$WarehouseImpl({required this.id, required this.name, this.address});
 
   factory _$WarehouseImpl.fromJson(Map<String, dynamic> json) =>
       _$$WarehouseImplFromJson(json);
@@ -290,10 +307,12 @@ class _$WarehouseImpl implements _Warehouse {
   final int id;
   @override
   final String name;
+  @override
+  final String? address;
 
   @override
   String toString() {
-    return 'Warehouse(id: $id, name: $name)';
+    return 'Warehouse(id: $id, name: $name, address: $address)';
   }
 
   @override
@@ -302,12 +321,13 @@ class _$WarehouseImpl implements _Warehouse {
         (other.runtimeType == runtimeType &&
             other is _$WarehouseImpl &&
             (identical(other.id, id) || other.id == id) &&
-            (identical(other.name, name) || other.name == name));
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.address, address) || other.address == address));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name);
+  int get hashCode => Object.hash(runtimeType, id, name, address);
 
   /// Create a copy of Warehouse
   /// with the given fields replaced by the non-null parameter values.
@@ -327,6 +347,7 @@ abstract class _Warehouse implements Warehouse {
   const factory _Warehouse({
     required final int id,
     required final String name,
+    final String? address,
   }) = _$WarehouseImpl;
 
   factory _Warehouse.fromJson(Map<String, dynamic> json) =
@@ -336,6 +357,8 @@ abstract class _Warehouse implements Warehouse {
   int get id;
   @override
   String get name;
+  @override
+  String? get address;
 
   /// Create a copy of Warehouse
   /// with the given fields replaced by the non-null parameter values.
