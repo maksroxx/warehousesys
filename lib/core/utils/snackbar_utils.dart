@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -7,7 +9,7 @@ class AppSnackbars {
       context,
       message,
       icon: PhosphorIconsFill.checkCircle,
-      backgroundColor: const Color(0xFF027A48),
+      backgroundColor: const Color.fromARGB(255, 0, 180, 0),
       textColor: Colors.white,
     );
   }
@@ -59,13 +61,13 @@ class AppSnackbars {
             ),
           ],
         ),
-        backgroundColor: backgroundColor,
+        backgroundColor: backgroundColor.withOpacity(0.9), 
         behavior: SnackBarBehavior.floating,
-        elevation: 4,
+        elevation: 0,
         margin: const EdgeInsets.all(24),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 1),
       ),
     );
   }

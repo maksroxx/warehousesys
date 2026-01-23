@@ -11,6 +11,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/l10n/app_localizations.dart';
 
@@ -135,9 +136,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       return Uint8List.fromList(bytes);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Ошибка загрузки: $e"), backgroundColor: Colors.red),
-        );
+        AppSnackbars.showError(context, "Ошибка формирования отчета: $e");
       }
       return null;
     } finally {
@@ -220,6 +219,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ext: fileInfo.ext,
           mimeType: fileInfo.mime,
         );
+        if (mounted) {
+           AppSnackbars.showSuccess(context, "Файл успешно сохранен");
+        }
       } else {
         final path = await FileSaver.instance.saveFile(
           name: name,
@@ -229,24 +231,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         );
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Сохранено: $path"),
-              backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: 'Открыть',
-                textColor: Colors.white,
-                onPressed: () => OpenFilex.open(path),
-              ),
-            ),
-          );
+          AppSnackbars.showSuccess(context, "Отчет сохранен: $path");
+          
+          // OpenFilex.open(path); 
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Ошибка сохранения: $e"), backgroundColor: Colors.red),
-        );
+        AppSnackbars.showError(context, "Не удалось сохранить файл: $e");
       }
     }
   }
@@ -274,9 +266,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Ошибка отправки: $e"), backgroundColor: Colors.red),
-        );
+        AppSnackbars.showError(context, "Ошибка отправки: $e");
       }
     }
   }

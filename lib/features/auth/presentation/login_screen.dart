@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/auth/presentation/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -19,47 +20,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     setState(() => _isLoading = true);
-    
     FocusScope.of(context).unfocus();
 
     try {
       await ref.read(authProvider.notifier).login(
-            _emailController.text,
+            _emailController.text.trim(),
             _passwordController.text,
           );
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Успешный вход в систему'),
-              ],
-            ),
-            backgroundColor: statusInStockText,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        AppSnackbars.showSuccess(context, 'Добро пожаловать в Warehouse Manager!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(child: Text('Ошибка: ${e.toString().replaceAll('Exception:', '')}')),
-              ],
-            ),
-            backgroundColor: statusOutOfStockText,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        String errorMessage = "Произошла ошибка при входе";
+        final errorStr = e.toString().toLowerCase();
+
+        if (errorStr.contains("401") || errorStr.contains("unauthorized")) {
+          errorMessage = "Неверный Email или пароль. Попробуйте снова.";
+        } else if (errorStr.contains("connection") || errorStr.contains("socket")) {
+          errorMessage = "Нет соединения с сервером. Проверьте интернет.";
+        } else if (errorStr.contains("user not found")) {
+          errorMessage = "Пользователь с таким email не найден.";
+        }
+        AppSnackbars.showError(context, errorMessage);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
