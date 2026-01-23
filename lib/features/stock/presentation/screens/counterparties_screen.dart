@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/dialog_utils.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/add_or_edit_counterparty_dialog.dart';
@@ -11,7 +12,8 @@ import 'package:warehousesys/l10n/app_localizations.dart';
 class CounterpartiesScreen extends ConsumerStatefulWidget {
   const CounterpartiesScreen({super.key});
   @override
-  ConsumerState<CounterpartiesScreen> createState() => _CounterpartiesScreenState();
+  ConsumerState<CounterpartiesScreen> createState() =>
+      _CounterpartiesScreenState();
 }
 
 class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
@@ -33,7 +35,8 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       ref.read(counterpartiesProvider.notifier).fetchNextPage();
     }
   }
@@ -62,16 +65,24 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
 
     if (confirmed == true) {
       try {
-        await ref.read(stockRepositoryProvider).deleteCounterparty(counterparty.id);
+        await ref
+            .read(stockRepositoryProvider)
+            .deleteCounterparty(counterparty.id);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.counterpartyDeleted), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text(l10n.counterpartyDeleted),
+            backgroundColor: Colors.green,
+          ),
         );
         ref.invalidate(counterpartiesProvider);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.deleteError(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(l10n.deleteError(e)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -94,25 +105,33 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
             onChanged: (value) {
               _debounce?.cancel();
               _debounce = Timer(const Duration(milliseconds: 500), () {
-                ref.read(counterpartyFilterProvider.notifier).update((state) => state.copyWith(search: value));
+                ref
+                    .read(counterpartyFilterProvider.notifier)
+                    .update((state) => state.copyWith(search: value));
               });
             },
             decoration: InputDecoration(
               hintText: l10n.searchCounterparties,
-              prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass, color: textGreyColor, size: 20),
+              prefixIcon: Icon(
+                PhosphorIconsRegular.magnifyingGlass,
+                color: textGreyColor,
+                size: 20,
+              ),
               fillColor: Theme.of(context).scaffoldBackgroundColor,
             ),
           ),
           const SizedBox(height: 24),
-          Expanded(
-            child: _buildContent(counterpartiesState, l10n),
-          ),
+          Expanded(child: _buildContent(counterpartiesState, l10n)),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, TextTheme textTheme, AppLocalizations l10n) {
+  Widget _buildHeader(
+    BuildContext context,
+    TextTheme textTheme,
+    AppLocalizations l10n,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -129,7 +148,9 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
             backgroundColor: primaryColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             elevation: 1,
           ),
           label: Text(l10n.addCounterparty),
@@ -139,9 +160,12 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
   }
 
   Widget _buildContent(CounterpartyListState state, AppLocalizations l10n) {
-    if (state.isLoadingFirstPage) return const Center(child: CircularProgressIndicator());
-    if (state.error != null && state.counterparties.isEmpty) return Center(child: Text('Error: ${state.error}'));
-    if (state.counterparties.isEmpty) return Center(child: Text(l10n.noCounterpartiesFound));
+    if (state.isLoadingFirstPage)
+      return const Center(child: CircularProgressIndicator());
+    if (state.error != null && state.counterparties.isEmpty)
+      return Center(child: Text('Error: ${state.error}'));
+    if (state.counterparties.isEmpty)
+      return Center(child: Text(l10n.noCounterpartiesFound));
 
     return Container(
       decoration: BoxDecoration(
@@ -158,10 +182,16 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
             child: ListView.separated(
               controller: _scrollController,
               itemCount: state.counterparties.length + (state.hasMore ? 1 : 0),
-              separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1),
+              separatorBuilder: (context, index) =>
+                  const Divider(height: 1, thickness: 1),
               itemBuilder: (context, index) {
                 if (index == state.counterparties.length) {
-                  return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()));
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
                 }
                 return _buildTableRow(state.counterparties[index], l10n);
               },
@@ -198,30 +228,87 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _DataCell((item.name.isNotEmpty) ? item.name : '-', flex: 2, isPrimary: true),
-            _DataCell((item.phone != null && item.phone!.isNotEmpty) ? item.phone! : '-', flex: 2),
-            _DataCell((item.email != null && item.email!.isNotEmpty) ? item.email! : '-', flex: 2),
-            _DataCell((item.telegram != null && item.telegram!.isNotEmpty) ? item.telegram! : '-', flex: 2),
-            _DataCell((item.address != null && item.address!.isNotEmpty) ? item.address! : '-', flex: 3),
+            _DataCell(
+              (item.name.isNotEmpty) ? item.name : '-',
+              flex: 2,
+              isPrimary: true,
+            ),
+            _DataCell(
+              (item.phone != null && item.phone!.isNotEmpty)
+                  ? item.phone!
+                  : '-',
+              flex: 2,
+            ),
+            _DataCell(
+              (item.email != null && item.email!.isNotEmpty)
+                  ? item.email!
+                  : '-',
+              flex: 2,
+            ),
+            _DataCell(
+              (item.telegram != null && item.telegram!.isNotEmpty)
+                  ? item.telegram!
+                  : '-',
+              flex: 2,
+            ),
+            _DataCell(
+              (item.address != null && item.address!.isNotEmpty)
+                  ? item.address!
+                  : '-',
+              flex: 3,
+            ),
             Expanded(
               flex: 1,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: Icon(PhosphorIconsRegular.pencilSimple, color: textGreyColor, size: 20),
+                    icon: Icon(
+                      PhosphorIconsRegular.pencilSimple,
+                      color: textGreyColor,
+                      size: 20,
+                    ),
                     onPressed: () {
                       showDialog(
                         context: context,
-                        builder: (context) => AddOrEditCounterpartyDialog(counterpartyToEdit: item),
+                        builder: (context) => AddOrEditCounterpartyDialog(
+                          counterpartyToEdit: item,
+                        ),
                       );
                     },
                     tooltip: l10n.editCounterparty,
                   ),
                   IconButton(
-                    icon: Icon(PhosphorIconsRegular.trash, color: Colors.red.shade600, size: 20),
-                    onPressed: () => _showDeleteConfirmationDialog(item),
+                    icon: Icon(
+                      PhosphorIconsRegular.trash,
+                      color: Colors.red.shade600,
+                      size: 20,
+                    ),
                     tooltip: l10n.deleteCounterparty,
+                    onPressed: () {
+                      showBeautifulDeleteDialog(
+                        context: context,
+                        title: "Удалить контрагента?",
+                        content:
+                            "Все связанные с ним документы могут потерять информацию о поставщике/покупателе.",
+                        itemName: item.name,
+                        onDelete: () async {
+                          try {
+                            await ref
+                                .read(stockRepositoryProvider)
+                                .deleteCounterparty(item.id);
+                            ref.invalidate(counterpartiesProvider);
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Ошибка: $e"),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
@@ -237,7 +324,11 @@ class _HeaderCell extends StatelessWidget {
   final String text;
   final int flex;
   final TextAlign alignment;
-  const _HeaderCell(this.text, {required this.flex, this.alignment = TextAlign.left});
+  const _HeaderCell(
+    this.text, {
+    required this.flex,
+    this.alignment = TextAlign.left,
+  });
   @override
   Widget build(BuildContext context) {
     return Expanded(
@@ -245,14 +336,20 @@ class _HeaderCell extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         textAlign: alignment,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: textHeaderColor, letterSpacing: 0.5),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: textHeaderColor,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
 }
 
 class _DataCell extends StatelessWidget {
-  final String text; final int flex; final bool isPrimary;
+  final String text;
+  final int flex;
+  final bool isPrimary;
   const _DataCell(this.text, {required this.flex, this.isPrimary = false});
   @override
   Widget build(BuildContext context) {

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/dialog_utils.dart';
 import 'package:warehousesys/core/widgets/permission_guard.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
@@ -238,50 +239,41 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
 
   Future<void> _showDeleteConfirmationDialog(DocumentDetailsDTO doc) async {
     final l10n = AppLocalizations.of(context)!;
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.confirmDeletion),
-        content: Text(l10n.confirmDocumentDeletionContent(doc.number)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
 
-    if (confirmed == true) {
-      setState(() => _isLoading = true);
-      try {
-        await ref.read(stockRepositoryProvider).deleteDocument(doc.id);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Document deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        ref.invalidate(documentsProvider);
-        Navigator.of(context).pop();
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.deleteError(e)),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
+    showBeautifulDeleteDialog(
+      context: context,
+      title: l10n.confirmDeletion,
+      content: "Этот документ будет удален безвозвратно. Вы уверены?",
+      itemName: "№${doc.number}",
+      onDelete: () async {
+        setState(() => _isLoading = true);
+        try {
+          await ref.read(stockRepositoryProvider).deleteDocument(doc.id);
+          
+          if (!mounted) return;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Документ успешно удален'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          ref.invalidate(documentsProvider);
+          Navigator.of(context).pop(); 
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.deleteError(e.toString())),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      },
+    );
   }
 
   @override

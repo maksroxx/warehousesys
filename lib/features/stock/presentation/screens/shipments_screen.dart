@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/dialog_utils.dart';
 import 'package:warehousesys/features/stock/data/models/document.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:intl/intl.dart';
@@ -107,12 +108,15 @@ class _ShipmentsScreenState extends ConsumerState<ShipmentsScreen> {
   }
 
   Widget _buildContent(DocumentListState state, AppLocalizations l10n) {
-    if (state.isLoadingFirstPage)
+    if (state.isLoadingFirstPage) {
       return const Center(child: CircularProgressIndicator());
-    if (state.error != null && state.documents.isEmpty)
+    }
+    if (state.error != null && state.documents.isEmpty) {
       return Center(child: Text('${l10n.error}: ${state.error}'));
-    if (state.documents.isEmpty)
+    }
+    if (state.documents.isEmpty) {
       return Center(child: Text(l10n.noShipmentsFound));
+    }
 
     return GridView.builder(
       controller: _scrollController,
@@ -262,45 +266,14 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-void _showCreateDocumentDialog(BuildContext context) {
-  // Получаем l10n внутри функции диалога через context
-  final l10n = AppLocalizations.of(context)!;
-  
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(l10n.createDocument),
-      content: Text(l10n.chooseDocumentType),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.cancel),
+Future<void> _showCreateDocumentDialog(BuildContext context) async {
+    final String? selectedType = await showCreateDocumentTypeDialog(context);
+
+    if (selectedType != null && context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => CreateDocumentScreen(documentType: selectedType),
         ),
-        FilledButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    const CreateDocumentScreen(documentType: 'INCOME'),
-              ),
-            );
-          },
-          child: Text(l10n.income),
-        ),
-        FilledButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    const CreateDocumentScreen(documentType: 'OUTCOME'),
-              ),
-            );
-          },
-          child: Text(l10n.outcome),
-        ),
-      ],
-    ),
-  );
+      );
+    }
 }

@@ -146,123 +146,102 @@ Future<void> showStyledFormDialog({
   );
 }
 
-Future<void> showBeautifulConfirmDialog({
-  required BuildContext context,
-  required String title,
-  required String content,
-  required VoidCallback onConfirm,
-  String confirmLabel = "Подтвердить",
-  bool isPrimary = true,
-}) {
-  return showDialog(
+Future<String?> showCreateDocumentTypeDialog(BuildContext context) {
+  return showDialog<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
+    builder: (context) => Dialog(
       backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      icon: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: (isPrimary ? primaryColor : textGreyColor).withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          PhosphorIconsFill.question, 
-          color: isPrimary ? primaryColor : textGreyColor, 
-          size: 32
-        ),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textDarkColor)),
-      content: Text(content, textAlign: TextAlign.center, style: const TextStyle(color: textGreyColor, fontSize: 14)),
-      actionsAlignment: MainAxisAlignment.center,
-      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      actions: [
-        OutlinedButton(
-          onPressed: () => Navigator.pop(ctx),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            side: const BorderSide(color: borderColor),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            foregroundColor: textHeaderColor,
-          ),
-          child: const Text("Отмена"),
-        ),
-        const SizedBox(width: 12),
-        ElevatedButton(
-          onPressed: () {
-            onConfirm();
-            Navigator.pop(ctx);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isPrimary ? primaryColor : textHeaderColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            elevation: 0,
-          ),
-          child: Text(confirmLabel),
-        ),
-      ],
-    ),
-  );
-}
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 550), 
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Создать документ',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold, 
+                  color: textDarkColor
+                ),
+              ),
+              const SizedBox(height: 6),
+              
+              const Text(
+                'Выберите тип операции',
+                style: TextStyle(
+                  fontSize: 14, 
+                  color: textGreyColor
+                ),
+              ),
+              const SizedBox(height: 24),
 
-Future<void> showSelectionDialog({
-  required BuildContext context,
-  required String title,
-  required List<SelectionOption> options,
-}) {
-  return showDialog(
-    context: context,
-    builder: (ctx) => Dialog(
-      backgroundColor: backgroundLightColor,
-      surfaceTintColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDarkColor)),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: options.map((option) => _SelectionCard(option: option)).toList(),
-            ),
-          ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: _SelectionCard(
+                      label: "Приход",
+                      icon: PhosphorIconsRegular.arrowDown,
+                      backgroundColor: const Color(0xFFECFDF3),
+                      borderColor: const Color(0xFFA6F4C5),
+                      textColor: const Color(0xFF027A48),
+                      onTap: () => Navigator.pop(context, 'INCOME'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SelectionCard(
+                      label: "Расход",
+                      icon: PhosphorIconsRegular.arrowUp,
+                      backgroundColor: const Color(0xFFF0F9FF),
+                      borderColor: const Color(0xFFB9E6FE),
+                      textColor: const Color(0xFF026AA2),
+                      onTap: () => Navigator.pop(context, 'OUTCOME'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: textGreyColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                ),
+                child: const Text("Отмена"),
+              )
+            ],
+          ),
         ),
       ),
     ),
   );
-}
-
-class SelectionOption {
-  final String title;
-  final String? description;
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color color;
-
-  SelectionOption({
-    required this.title,
-    this.description,
-    required this.icon,
-    required this.onTap,
-    this.color = primaryColor,
-  });
 }
 
 class _SelectionCard extends StatefulWidget {
-  final SelectionOption option;
-  const _SelectionCard({required this.option});
+  final String label;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color textColor;
+  final VoidCallback onTap;
+
+  const _SelectionCard({
+    required this.label,
+    required this.icon,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.textColor,
+    required this.onTap,
+  });
 
   @override
   State<_SelectionCard> createState() => _SelectionCardState();
@@ -276,40 +255,40 @@ class _SelectionCardState extends State<_SelectionCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () {
-          Navigator.pop(context);
-          widget.option.onTap();
-        },
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 210,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _isHovered ? widget.option.color.withOpacity(0.5) : borderColor),
-            boxShadow: _isHovered
-                ? [BoxShadow(color: widget.option.color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))]
-                : [],
+            color: _isHovered 
+                ? Color.alphaBlend(widget.textColor.withOpacity(0.1), widget.backgroundColor) 
+                : widget.backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _isHovered ? widget.textColor : widget.borderColor, 
+              width: 1.5
+            ),
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: widget.option.color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(widget.option.icon, size: 28, color: widget.option.color),
+              Icon(
+                widget.icon, 
+                size: 28,
+                color: widget.textColor
               ),
-              const SizedBox(height: 16),
-              Text(widget.option.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textDarkColor), textAlign: TextAlign.center),
-              if (widget.option.description != null) ...[
-                const SizedBox(height: 8),
-                Text(widget.option.description!, style: const TextStyle(fontSize: 12, color: textGreyColor), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
-              ]
+              const SizedBox(height: 8),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  color: widget.textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),

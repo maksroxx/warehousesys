@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/dialog_utils.dart';
 import 'package:warehousesys/features/stock/data/models/item_details.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
@@ -67,37 +68,40 @@ class _Header extends ConsumerWidget {
   final InventoryItem item;
   const _Header({required this.item});
   
-  Future<void> _showDeleteConfirmationDialog(BuildContext context, WidgetRef ref) async {
+  void _showDeleteConfirmationDialog(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.confirmDeletion),
-        content: Text(l10n.confirmVariantDeletionContent(item.productName, item.sku)),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancel)),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
 
-    if (confirmed == true) {
-      try {
-        await ref.read(stockRepositoryProvider).deleteVariant(item.id);
-        if (!context.mounted) return; 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.itemDeletedSuccess), backgroundColor: Colors.green));
-        ref.invalidate(inventoryProvider);
-        Navigator.of(context).pop();
-      } catch (e) {
-        if (!context.mounted) return; 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.deleteError(e)), backgroundColor: Colors.red));
-      }
-    }
+    showBeautifulDeleteDialog(
+      context: context,
+      title: l10n.confirmDeletion,
+      content: "Это действие необратимо. История движений по этому товару может стать недоступной.", 
+      itemName: "${item.productName} (${item.sku})", 
+      onDelete: () async {
+        try {
+          await ref.read(stockRepositoryProvider).deleteVariant(item.id);
+          if (!context.mounted) return;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.itemDeletedSuccess), 
+              backgroundColor: Colors.green
+            ),
+          );
+          
+          ref.invalidate(inventoryProvider);
+          
+          Navigator.of(context).pop();
+        } catch (e) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.deleteError(e.toString())), 
+              backgroundColor: Colors.red
+            ),
+          );
+        }
+      },
+    );
   }
 
   @override
@@ -177,13 +181,11 @@ class _LeftColumn extends ConsumerWidget {
             ),
           ),
         
-        // ИНФОРМАЦИЯ
         _InfoCard(
           title: l10n.detailedInformation,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Описание грузится отдельно
               productDetailsAsync.when(
                 loading: () => const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator())),
                 error: (e, s) => Center(child: Text(l10n.errorLoadingDescription(e))),
