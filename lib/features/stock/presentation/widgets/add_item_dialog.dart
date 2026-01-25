@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:warehousesys/core/config/app_config.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
@@ -52,7 +54,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
   List<String> _serverImageUrls = [];
   final List<File> _newImageFiles = [];
 
-  final String _baseUrl = 'http://127.0.0.1:8080';
+  final String _baseUrl = AppConfig.apiUrl;
 
   @override
   void initState() {
@@ -165,32 +167,17 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     if (!isEditMode &&
         _selectedProduct == null &&
         _nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.enterProductNameError),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbars.showError(l10n.enterProductNameError);
       return;
     }
     if (!isEditMode &&
         _selectedProduct == null &&
         _selectedCategoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.selectCategoryError),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbars.showError(l10n.selectCategoryError);
       return;
     }
     if (_selectedUnit == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Выберите единицу измерения"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbars.showError("Выберите единицу измерения");
       return;
     }
 
@@ -268,13 +255,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       ref.invalidate(inventoryProvider);
       ref.invalidate(productsProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isEditMode ? l10n.itemUpdatedSuccess : l10n.itemAddedSuccess,
-          ),
-          backgroundColor: Colors.green,
-        ),
+      AppSnackbars.showSuccess(
+        isEditMode ? l10n.itemUpdatedSuccess : l10n.itemAddedSuccess,
       );
       Navigator.of(context).pop();
     } on DioException catch (e) {
@@ -290,18 +272,11 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
         errorMessage = l10n.networkError(e.message ?? '');
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-        );
+        AppSnackbars.showError(errorMessage);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.generalError(e.toString())),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbars.showError(l10n.generalError(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -325,12 +300,7 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.categoryCreateError(e)),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbars.showError(l10n.categoryCreateError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

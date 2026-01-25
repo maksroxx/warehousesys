@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/core/utils/dialog_utils.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/core/widgets/permission_guard.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/document_details.dart';
@@ -174,22 +175,12 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
           .updateDocument(widget.documentId, payload);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.draftUpdatedSuccess),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppSnackbars.showSuccess(l10n.draftUpdatedSuccess);
       ref.invalidate(documentsProvider);
       ref.invalidate(documentDetailsProvider(widget.documentId));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.draftUpdateError(e)),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbars.showError(l10n.draftUpdateError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -209,12 +200,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
       await ref.read(stockRepositoryProvider).postDocument(widget.documentId);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.documentPostedSuccess),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppSnackbars.showSuccess(l10n.documentPostedSuccess);
       ref.invalidate(documentsProvider);
       ref.invalidate(inventoryProvider);
       ref.invalidate(documentDetailsProvider(widget.documentId));
@@ -229,9 +215,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
         }
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-      );
+      AppSnackbars.showError(errorMessage);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -252,23 +236,13 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
           
           if (!mounted) return;
           
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Документ успешно удален'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          AppSnackbars.showSuccess('Документ успешно удален');
           
           ref.invalidate(documentsProvider);
           Navigator.of(context).pop(); 
         } catch (e) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.deleteError(e.toString())),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackbars.showError(l10n.deleteError(e.toString()));
         } finally {
           if (mounted) setState(() => _isLoading = false);
         }

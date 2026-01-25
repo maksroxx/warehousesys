@@ -3,10 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 class AppSnackbars {
-  static void showSuccess(BuildContext context, String message) {
+  static void showSuccess(String message) {
     _show(
-      context,
       message,
       icon: PhosphorIconsFill.checkCircle,
       backgroundColor: const Color.fromARGB(255, 0, 180, 0),
@@ -14,9 +15,8 @@ class AppSnackbars {
     );
   }
 
-  static void showError(BuildContext context, String message) {
+  static void showError(String message) {
     _show(
-      context,
       message,
       icon: PhosphorIconsFill.warningCircle,
       backgroundColor: const Color(0xFFB42318),
@@ -24,9 +24,8 @@ class AppSnackbars {
     );
   }
 
-  static void showInfo(BuildContext context, String message) {
+  static void showInfo(String message) {
     _show(
-      context,
       message,
       icon: PhosphorIconsFill.info,
       backgroundColor: const Color(0xFF344054),
@@ -35,15 +34,16 @@ class AppSnackbars {
   }
 
   static void _show(
-    BuildContext context,
     String message, {
     required IconData icon,
     required Color backgroundColor,
     required Color textColor,
   }) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final messenger = rootScaffoldMessengerKey.currentState;
+    if (messenger == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -61,7 +61,7 @@ class AppSnackbars {
             ),
           ],
         ),
-        backgroundColor: backgroundColor.withOpacity(0.9), 
+        backgroundColor: backgroundColor.withOpacity(0.9),
         behavior: SnackBarBehavior.floating,
         elevation: 0,
         margin: const EdgeInsets.all(24),

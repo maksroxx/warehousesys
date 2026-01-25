@@ -30,7 +30,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, s) => Center(child: Text(l10n.documentErrorLoading(e))),
           data: (doc) => Column(
-            mainAxisSize: MainAxisSize.min, // Важно, чтобы Flexible работал правильно
+            mainAxisSize: MainAxisSize.min,
             children: [
               _Header(doc: doc),
               Flexible(

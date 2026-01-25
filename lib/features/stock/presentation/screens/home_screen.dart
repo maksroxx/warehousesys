@@ -15,9 +15,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
-    
+    final l10n = AppLocalizations.of(context)!;    
     final dashboardAsync = ref.watch(dashboardDataProvider);
     final warehousesAsync = ref.watch(warehousesProvider);
     final selectedWh = ref.watch(selectedDashboardWarehouseProvider);

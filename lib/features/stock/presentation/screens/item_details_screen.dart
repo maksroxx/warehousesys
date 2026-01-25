@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/core/utils/dialog_utils.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/stock/data/models/item_details.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
@@ -81,24 +82,14 @@ class _Header extends ConsumerWidget {
           await ref.read(stockRepositoryProvider).deleteVariant(item.id);
           if (!context.mounted) return;
           
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.itemDeletedSuccess), 
-              backgroundColor: Colors.green
-            ),
-          );
+          AppSnackbars.showSuccess(l10n.itemDeletedSuccess);
           
           ref.invalidate(inventoryProvider);
           
           Navigator.of(context).pop();
         } catch (e) {
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.deleteError(e.toString())), 
-              backgroundColor: Colors.red
-            ),
-          );
+          AppSnackbars.showError(l10n.deleteError(e.toString()));
         }
       },
     );

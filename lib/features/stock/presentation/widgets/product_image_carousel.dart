@@ -1,6 +1,9 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:warehousesys/core/config/app_config.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 
 class ProductImageCarousel extends StatefulWidget {
@@ -22,7 +25,7 @@ class ProductImageCarousel extends StatefulWidget {
 class _ProductImageCarouselState extends State<ProductImageCarousel> {
   int _currentIndex = 0;
   final CarouselSliderController _controller = CarouselSliderController();
-  final String baseUrl = 'http://127.0.0.1:8080';
+  final String baseUrl = AppConfig.apiUrl;
 
   @override
   Widget build(BuildContext context) {

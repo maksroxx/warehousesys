@@ -1,10 +1,13 @@
+// ignore_for_file: avoid_print
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:warehousesys/core/config/app_config.dart';
 import 'package:warehousesys/core/network/token_storage.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
-    baseUrl: 'http://127.0.0.1:8080/api/v1',
+    baseUrl: AppConfig.apiBaseUrl,
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
   ));
@@ -20,7 +23,6 @@ final dioProvider = Provider<Dio>((ref) {
       } else {
         print('>>> INTERCEPTOR: ❌ Токен равен NULL. Запрос уйдет без авторизации.');
       }
-      // -----------------------------
 
       return handler.next(options);
     },

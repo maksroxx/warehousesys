@@ -1,8 +1,11 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/core/utils/dialog_utils.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/core/widgets/styled_hover_card.dart';
 import 'package:warehousesys/features/auth/data/models/user_model.dart';
 import 'package:warehousesys/features/settings/presentation/providers/user_management_providers.dart';
@@ -34,13 +37,7 @@ class _UsersRolesManagerState extends ConsumerState<UsersRolesManager> with Sing
   Widget build(BuildContext context) {
     ref.listen(userManagementProvider, (prev, next) {
       if (next is AsyncError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ошибка: ${next.error}'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackbars.showError('Ошибка: ${next.error}');
       }
     });
 
@@ -257,7 +254,6 @@ class _UsersListTab extends ConsumerWidget {
                 final rolesAsync = ref.watch(rolesListProvider);
                 return rolesAsync.when(
                   data: (roles) {
-                    // Pre-select role logic
                     if (isEdit && selectedRole == null) {
                       try {
                         selectedRole = roles.firstWhere((r) => r.id == user.role.id);

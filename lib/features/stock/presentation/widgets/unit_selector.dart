@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 
@@ -138,12 +139,7 @@ class UnitSelector extends ConsumerWidget {
                   ref.invalidate(unitsProvider);
                   if (context.mounted) Navigator.pop(ctx);
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Ошибка: $e"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  AppSnackbars.showError("Ошибка: $e");
                 }
               }
             },

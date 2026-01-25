@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/l10n/app_localizations.dart';
@@ -74,16 +75,12 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isEditMode 
-              ? l10n.counterpartyUpdatedSuccess 
-              : l10n.counterpartyCreatedSuccess),
-          backgroundColor: Colors.green,
-        ),
+      AppSnackbars.showSuccess(
+        isEditMode 
+            ? l10n.counterpartyUpdatedSuccess 
+            : l10n.counterpartyCreatedSuccess,
       );
 
-      // Invalidate providers to refetch data
       ref.invalidate(counterpartiesProvider); 
       if(isEditMode) {
         ref.invalidate(counterpartyDetailsProvider(counterparty.id));
@@ -92,13 +89,7 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          // Используем общий ключ ошибки, который мы создали ранее
-          content: Text(l10n.generalError(e.toString())), 
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackbars.showError(l10n.generalError(e.toString()));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -121,7 +112,7 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 550, // Одноколоночный макет, ширина меньше
+          maxWidth: 550,
           maxHeight: MediaQuery.of(context).size.height * 0.8,
         ),
         child: Form(
@@ -143,7 +134,6 @@ class _AddOrEditCounterpartyDialogState extends ConsumerState<AddOrEditCounterpa
                         ),
                         const SizedBox(height: 24),
 
-                        // --- Поля формы ---
                         _FormEntry(
                           label: l10n.nameLabel,
                           isRequired: true,

@@ -10,12 +10,14 @@ class AuthState {
   final bool isLoading;
   final String? error;
 
-  AuthState({
+  const AuthState({
     this.user,
     this.isAuthenticated = false,
-    this.isLoading = true,
+    this.isLoading = false,
     this.error,
   });
+
+  bool get hasError => error != null && error!.isNotEmpty;
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -43,25 +45,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> login(String email, String password) async {
-    state = AuthState(isLoading: true);
-    try {
-      final response = await _dio.post('/auth/login', data: {
-        'email': email,
-        'password': password,
-      });
+  state = const AuthState(isLoading: true);
+  try {
+    final response = await _dio.post(
+      '/auth/login',
+      data: {'email': email, 'password': password},
+    );
 
-      final token = response.data['token'];
-      final userData = response.data['user'];
-      final user = User.fromJson(userData);
+    final token = response.data['token'];
+    final userData = response.data['user'];
+    final user = User.fromJson(userData);
 
-      await TokenStorage.saveToken(token);
+    await TokenStorage.saveToken(token);
 
-      state = AuthState(user: user, isAuthenticated: true, isLoading: false);
-    } catch (e) {
-      state = AuthState(isAuthenticated: false, isLoading: false, error: e.toString());
-      rethrow;
-    }
+    state = AuthState(user: user, isAuthenticated: true, isLoading: false);
+  } catch (e) {
+    state = AuthState(
+      isAuthenticated: false,
+      isLoading: false,
+      error: e.toString(),
+    );
+    rethrow; 
   }
+}
 
   Future<void> logout() async {
     await TokenStorage.deleteToken();

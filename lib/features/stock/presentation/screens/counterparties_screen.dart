@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/core/utils/dialog_utils.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 import 'package:warehousesys/features/stock/presentation/widgets/add_or_edit_counterparty_dialog.dart';
@@ -69,21 +70,11 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
             .read(stockRepositoryProvider)
             .deleteCounterparty(counterparty.id);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.counterpartyDeleted),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackbars.showSuccess(l10n.counterpartyDeleted);
         ref.invalidate(counterpartiesProvider);
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.deleteError(e)),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbars.showError(l10n.deleteError(e));
       }
     }
   }
@@ -299,12 +290,7 @@ class _CounterpartiesScreenState extends ConsumerState<CounterpartiesScreen> {
                                 .deleteCounterparty(item.id);
                             ref.invalidate(counterpartiesProvider);
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Ошибка: $e"),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            AppSnackbars.showError("Ошибка: $e");
                           }
                         },
                       );

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
@@ -136,7 +138,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       return Uint8List.fromList(bytes);
     } catch (e) {
       if (mounted) {
-        AppSnackbars.showError(context, "Ошибка формирования отчета: $e");
+        AppSnackbars.showError("Ошибка формирования отчета: $e");
       }
       return null;
     } finally {
@@ -220,7 +222,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           mimeType: fileInfo.mime,
         );
         if (mounted) {
-           AppSnackbars.showSuccess(context, "Файл успешно сохранен");
+           AppSnackbars.showSuccess("Файл успешно сохранен");
         }
       } else {
         final path = await FileSaver.instance.saveFile(
@@ -231,14 +233,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         );
         
         if (mounted) {
-          AppSnackbars.showSuccess(context, "Отчет сохранен: $path");
+          AppSnackbars.showSuccess("Отчет сохранен: $path");
           
           // OpenFilex.open(path); 
         }
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbars.showError(context, "Не удалось сохранить файл: $e");
+        AppSnackbars.showError("Не удалось сохранить файл: $e");
       }
     }
   }
@@ -266,7 +268,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbars.showError(context, "Ошибка отправки: $e");
+        AppSnackbars.showError("Ошибка отправки: $e");
       }
     }
   }

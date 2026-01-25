@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
 import 'package:warehousesys/core/utils/dialog_utils.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/core/widgets/styled_hover_card.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
@@ -61,9 +62,7 @@ class WarehousesManagerDialog extends ConsumerWidget {
         if (formKey.currentState!.validate()) {
           try {
             if (isEdit) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Редактирование складов пока не поддерживается API"), backgroundColor: Colors.orange),
-              );
+              AppSnackbars.showInfo("Редактирование складов пока не поддерживается API");
             } else {
               await ref.read(stockRepositoryProvider).createWarehouse(nameCtrl.text, addrCtrl.text);
             }
@@ -72,9 +71,7 @@ class WarehousesManagerDialog extends ConsumerWidget {
             if (context.mounted) Navigator.pop(context);
             
           } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Ошибка: $e"), backgroundColor: Colors.red),
-            );
+            AppSnackbars.showError("Ошибка: $e");
           }
         }
       },
@@ -114,9 +111,7 @@ class WarehousesManagerDialog extends ConsumerWidget {
           await ref.read(stockRepositoryProvider).deleteWarehouse(wh.id);
           ref.invalidate(warehousesProvider);
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Ошибка удаления: $e"), backgroundColor: Colors.red),
-          );
+          AppSnackbars.showError("Ошибка удаления: $e");
         }
       },
     );
@@ -182,9 +177,7 @@ class CategoriesManagerDialog extends ConsumerWidget {
             ref.invalidate(categoriesProvider);
             if (context.mounted) Navigator.pop(context);
           } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Ошибка: $e"), backgroundColor: Colors.red),
-            );
+            AppSnackbars.showError("Ошибка: $e");
           }
         }
       },
@@ -218,9 +211,7 @@ class CategoriesManagerDialog extends ConsumerWidget {
           await ref.read(stockRepositoryProvider).deleteCategory(cat.id);
           ref.invalidate(categoriesProvider);
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Ошибка удаления: $e"), backgroundColor: Colors.red),
-          );
+          AppSnackbars.showError("Ошибка удаления: $e");
         }
       },
     );

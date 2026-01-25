@@ -3,9 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart'; // Для форматирования чисел
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/stock/data/models/counterparty.dart';
 import 'package:warehousesys/features/stock/data/models/filters.dart';
 import 'package:warehousesys/features/stock/data/models/variant.dart';
@@ -108,7 +109,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       setState(() => _isInitializingFromBase = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorLoadingBaseDocument(e)), backgroundColor: Colors.red));
+      AppSnackbars.showError(l10n.errorLoadingBaseDocument(e));
     }
   }
 
@@ -253,7 +254,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       await ref.read(stockRepositoryProvider).createDocument(payload);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.documentSavedDraft), backgroundColor: Colors.green));
+      AppSnackbars.showSuccess(l10n.documentSavedDraft);
       
       ref.invalidate(documentsProvider);
       ref.invalidate(ordersProvider);
@@ -263,7 +264,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
 
     } catch (e) {
        if (!mounted) return;
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.saveError(e)), backgroundColor: Colors.red));
+       AppSnackbars.showError(l10n.saveError(e));
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }
@@ -281,7 +282,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
       await ref.read(stockRepositoryProvider).postDocument(createdDocument.id);
       
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.documentPostedSuccess), backgroundColor: Colors.green));
+      AppSnackbars.showSuccess(l10n.documentPostedSuccess);
       
       ref.invalidate(documentsProvider);
       ref.invalidate(ordersProvider);
@@ -299,7 +300,7 @@ class _CreateDocumentScreenState extends ConsumerState<CreateDocumentScreen> {
             errorMessage = data['error'].toString();
          }
        }
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red, duration: const Duration(seconds: 5)));
+       AppSnackbars.showError(errorMessage);
     } finally {
        if(mounted) setState(() => _isLoading = false);
     }
