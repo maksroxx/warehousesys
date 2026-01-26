@@ -53,30 +53,26 @@ class ServerManager {
       await Directory(userConfigDir).create(recursive: true);
     }
 
-    Future<void> copyIfMissing(String filename) async {
-      final target = p.join(userConfigDir, filename);
-      
-      if (!await File(target).exists()) {
-        final source = p.join(bundleResourcesDir, filename);
-        
-        if (await File(source).exists()) {
-          print("    Копирование конфига $filename...");
-          var content = await File(source).readAsString();
-          
-          if (filename == 'config.yaml') {
-            content = content.replaceAll(RegExp(r'dsn: ".*"'), 'dsn: "./data/local.db"');
-            content = content.replaceAll(RegExp(r'port: \s*\d+'), 'port: 0');
-          }
-          
-          await File(target).writeAsString(content);
-        } else {
-          print("⚠️ Шаблон $source не найден. Пропускаем.");
-        }
-      }
-    }
+    final stockSource = p.join(bundleResourcesDir, 'stock_config.yml');
+    final stockTarget = p.join(userConfigDir, 'stock_config.yml');
+    if (!await File(stockTarget).exists() && await File(stockSource).exists()) {
+        await File(stockSource).copy(stockTarget);
+    }    
+    final configSource = p.join(bundleResourcesDir, 'config.yaml');
+    final configTarget = p.join(userConfigDir, 'config.yaml');
 
-    await copyIfMissing('config.yaml');
-    await copyIfMissing('stock_config.yml');
+    if (await File(configSource).exists()) {
+      print("    Обновление конфигурации сервера...");
+      var content = await File(configSource).readAsString();
+      
+      content = content.replaceAll(RegExp(r'dsn: ".*"'), 'dsn: "./data/local.db"');
+      
+      content = content.replaceAll(RegExp(r'port: \s*\d+'), 'port: 0');
+      
+      await File(configTarget).writeAsString(content);
+    } else {
+      print("⚠️ Шаблон config.yaml не найден в ресурсах приложения!");
+    }
   }
 
   static Future<int> _waitForPort(Stream<List<int>> stdout) async {

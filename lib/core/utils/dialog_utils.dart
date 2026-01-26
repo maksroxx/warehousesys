@@ -10,6 +10,7 @@ Future<void> showBeautifulDeleteDialog({
   required String content,
   required String itemName,
   required VoidCallback onDelete,
+  String confirmButtonText = "Удалить",
 }) {
   return showDialog(
     context: context,
@@ -60,7 +61,7 @@ Future<void> showBeautifulDeleteDialog({
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             elevation: 0,
           ),
-          child: const Text("Удалить"),
+          child: Text(confirmButtonText),
         ),
       ],
     ),

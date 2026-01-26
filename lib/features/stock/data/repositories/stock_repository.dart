@@ -1,4 +1,7 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:warehousesys/features/auth/data/models/user_model.dart';
@@ -119,6 +122,8 @@ abstract class IStockRepository {
 
   Future<void> updateCategory(int id, String name);
   Future<void> deleteCategory(int id);
+  Future<Uint8List> backupDatabase();
+  Future<void> restoreDatabase(File file);
 }
 
 class StockRepository implements IStockRepository {
@@ -782,5 +787,26 @@ class StockRepository implements IStockRepository {
     } on DioException catch (e) {
       throw Exception(e.response?.data['error'] ?? 'Не удалось удалить склад');
     }
+  }
+
+  @override
+  Future<Uint8List> backupDatabase() async {
+    final response = await _dio.get(
+      '/system/backup',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<void> restoreDatabase(File file) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path, filename: 'restore.db'),
+    });
+
+    await _dio.post(
+      '/system/restore',
+      data: formData,
+    );
   }
 }

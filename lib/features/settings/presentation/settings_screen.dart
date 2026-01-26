@@ -1,10 +1,21 @@
+// ignore_for_file: deprecated_member_use
+
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
+import 'package:warehousesys/core/utils/dialog_utils.dart';
+import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/auth/presentation/auth_provider.dart';
 import 'package:warehousesys/features/settings/presentation/users_roles_manager.dart';
 import 'package:warehousesys/features/settings/presentation/warehouses_categories_manager.dart';
+import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -82,6 +93,98 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+
+      _SettingsWidgetCard(
+        title: 'Резервное копирование',
+        icon: PhosphorIconsRegular.database,
+        description: 'Сохранение и восстановление базы данных.',
+        points: const [
+          'Скачать полную копию базы (.db)',
+          'Восстановить данные из файла',
+        ],
+        actions: [
+          _WidgetAction(
+            label: 'Создать бэкап',
+            isPrimary: true,
+            onTap: () async {
+              try {
+                final bytes = await ref
+                    .read(stockRepositoryProvider)
+                    .backupDatabase();
+                final name =
+                    "FlowKeeper_Backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}";
+
+                if (!kIsWeb && (Platform.isMacOS || Platform.isWindows)) {
+                  await FileSaver.instance.saveFile(
+                    name: name,
+                    bytes: bytes,
+                    ext: 'db',
+                    mimeType: MimeType.other,
+                  );
+                } else {
+                  await FileSaver.instance.saveFile(
+                    name: name,
+                    bytes: bytes,
+                    ext: 'db',
+                    mimeType: MimeType.other,
+                  );
+                }
+
+                if (context.mounted) {
+                  AppSnackbars.showSuccess("Бэкап успешно сохранен");
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  AppSnackbars.showError("Ошибка создания бэкапа: $e");
+                }
+              }
+            },
+          ),
+          _WidgetAction(
+            label: 'Восстановить',
+            isPrimary: false,
+            isDestructive: true,
+            onTap: () async {
+              showBeautifulDeleteDialog(
+                context: context,
+                title: "Восстановить базу?",
+                confirmButtonText: "Восстановить",
+                content:
+                    "Текущие данные будут полностью заменены данными из файла. Это действие необратимо!",
+                itemName: "Восстановление из файла",
+                onDelete: () async {
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.any,
+                    dialogTitle: "Выберите файл бэкапа (.db)",
+                  );
+
+                  if (result != null && result.files.single.path != null) {
+                    final file = File(result.files.single.path!);
+
+                    try {
+                      await ref
+                          .read(stockRepositoryProvider)
+                          .restoreDatabase(file);
+
+                      if (context.mounted) {
+                        AppSnackbars.showSuccess(
+                          "База восстановлена! Перезагрузка...",
+                        );
+                        await Future.delayed(const Duration(seconds: 2));
+                        ref.read(authProvider.notifier).logout();
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        AppSnackbars.showError("Ошибка восстановления: $e");
+                      }
+                    }
+                  }
+                },
+              );
+            },
+          ),
+        ],
+      ),
 
       _SettingsWidgetCard(
         title: 'Текущая сессия',
