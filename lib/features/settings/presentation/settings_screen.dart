@@ -1,7 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +17,7 @@ import 'package:warehousesys/core/utils/snackbar_utils.dart';
 import 'package:warehousesys/features/auth/presentation/auth_provider.dart';
 import 'package:warehousesys/features/settings/presentation/users_roles_manager.dart';
 import 'package:warehousesys/features/settings/presentation/warehouses_categories_manager.dart';
+import 'package:warehousesys/features/settings/presentation/widgets/database_settings_dialog.dart';
 import 'package:warehousesys/features/stock/presentation/providers/stock_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -95,6 +98,24 @@ class SettingsScreen extends ConsumerWidget {
         ),
 
       _SettingsWidgetCard(
+        title: 'Подключение к БД',
+        icon: PhosphorIconsRegular.database,
+        description:
+            'Выбор источника данных: локальный файл или сервер PostgreSQL.',
+        points: const ['Локально (SQLite)', 'Удаленно (PostgreSQL)'],
+        actions: [
+          _WidgetAction(
+            label: 'Настроить',
+            isPrimary: false,
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => const DatabaseSettingsDialog(),
+            ),
+          ),
+        ],
+      ),
+
+      _SettingsWidgetCard(
         title: 'Резервное копирование',
         icon: PhosphorIconsRegular.database,
         description: 'Сохранение и восстановление базы данных.',
@@ -108,11 +129,8 @@ class SettingsScreen extends ConsumerWidget {
             isPrimary: true,
             onTap: () async {
               try {
-                final bytes = await ref
-                    .read(stockRepositoryProvider)
-                    .backupDatabase();
-                final name =
-                    "FlowKeeper_Backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}";
+                final bytes = await ref.read(stockRepositoryProvider).backupDatabase();
+                final name = "FlowKeeper_Backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}";
 
                 if (!kIsWeb && (Platform.isMacOS || Platform.isWindows)) {
                   await FileSaver.instance.saveFile(
@@ -135,11 +153,31 @@ class SettingsScreen extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  AppSnackbars.showError("Ошибка создания бэкапа: $e");
+                  String errorMessage = "Ошибка создания бэкапа";
+                  if (e is DioException && e.response?.data != null) {
+                    try {
+                      final responseData = e.response?.data;
+                      
+                      if (responseData is List<int>) {
+                        final decodedJson = utf8.decode(responseData);
+                        final map = jsonDecode(decodedJson);
+                        if (map is Map && map.containsKey('error')) {
+                          errorMessage = map['error'];
+                        }
+                      }
+                    } catch (_) {
+                      errorMessage = "Не удалось обработать ответ сервера: $e";
+                    }
+                  } else {
+                    errorMessage = e.toString();
+                  }
+
+                  AppSnackbars.showError(errorMessage);
                 }
               }
             },
           ),
+
           _WidgetAction(
             label: 'Восстановить',
             isPrimary: false,
@@ -149,8 +187,7 @@ class SettingsScreen extends ConsumerWidget {
                 context: context,
                 title: "Восстановить базу?",
                 confirmButtonText: "Восстановить",
-                content:
-                    "Текущие данные будут полностью заменены данными из файла. Это действие необратимо!",
+                content: "Текущие данные будут полностью заменены данными из файла. Это действие необратимо!",
                 itemName: "Восстановление из файла",
                 onDelete: () async {
                   final result = await FilePicker.platform.pickFiles(
@@ -162,20 +199,22 @@ class SettingsScreen extends ConsumerWidget {
                     final file = File(result.files.single.path!);
 
                     try {
-                      await ref
-                          .read(stockRepositoryProvider)
-                          .restoreDatabase(file);
+                      await ref.read(stockRepositoryProvider).restoreDatabase(file);
 
                       if (context.mounted) {
-                        AppSnackbars.showSuccess(
-                          "База восстановлена! Перезагрузка...",
-                        );
+                        AppSnackbars.showSuccess("База восстановлена! Перезагрузка...");
+                        
                         await Future.delayed(const Duration(seconds: 2));
                         ref.read(authProvider.notifier).logout();
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        AppSnackbars.showError("Ошибка восстановления: $e");
+                        String errorMessage = e.toString();
+                        if (e is DioException && e.response?.data is Map) {
+                           errorMessage = e.response?.data['error'] ?? errorMessage;
+                        }
+
+                        AppSnackbars.showError(errorMessage);
                       }
                     }
                   }

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:warehousesys/core/utils/error_handler.dart';
 
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -31,6 +32,11 @@ class AppSnackbars {
       backgroundColor: const Color(0xFF344054),
       textColor: Colors.white,
     );
+  }
+
+  static void showErrorObject(Object error) {
+    final message = ErrorHandler.format(error);
+    showError(message);
   }
 
   static void _show(

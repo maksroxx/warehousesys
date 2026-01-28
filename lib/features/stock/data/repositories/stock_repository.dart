@@ -124,6 +124,15 @@ abstract class IStockRepository {
   Future<void> deleteCategory(int id);
   Future<Uint8List> backupDatabase();
   Future<void> restoreDatabase(File file);
+
+  Future<void> switchDatabase({
+    required String driver,
+    String? host,
+    String? port,
+    String? user,
+    String? password,
+    String? dbname,
+  });
 }
 
 class StockRepository implements IStockRepository {
@@ -808,5 +817,34 @@ class StockRepository implements IStockRepository {
       '/system/restore',
       data: formData,
     );
+  }
+
+  @override
+  Future<void> switchDatabase({
+    required String driver,
+    String? host,
+    String? port,
+    String? user,
+    String? password,
+    String? dbname,
+  }) async {
+    await _dio.post('/system/config/db', data: {
+      'driver': driver,
+      'host': host,
+      'port': port,
+      'user': user,
+      'password': password,
+      'dbname': dbname,
+    });
+  }
+
+  Future<void> importProducts(File file) async {
+    String fileName = file.path.split(Platform.pathSeparator).last;
+    
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path, filename: fileName),
+    });
+
+    await _dio.post('/stock/products/import', data: formData);
   }
 }

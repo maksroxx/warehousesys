@@ -48,30 +48,45 @@ class ServerManager {
   static Future<void> _prepareConfigs(String exePath, String dataDir) async {
     final bundleResourcesDir = p.join(p.dirname(exePath), '..', 'Resources', 'templates');
     final userConfigDir = p.join(dataDir, 'config');
-
+    
     if (!await Directory(userConfigDir).exists()) {
       await Directory(userConfigDir).create(recursive: true);
     }
 
     final stockSource = p.join(bundleResourcesDir, 'stock_config.yml');
     final stockTarget = p.join(userConfigDir, 'stock_config.yml');
-    if (!await File(stockTarget).exists() && await File(stockSource).exists()) {
+    
+    if (!await File(stockTarget).exists()) {
+      if (await File(stockSource).exists()) {
         await File(stockSource).copy(stockTarget);
-    }    
+      }
+    }
+
     final configSource = p.join(bundleResourcesDir, 'config.yaml');
     final configTarget = p.join(userConfigDir, 'config.yaml');
 
     if (await File(configSource).exists()) {
-      print("    Обновление конфигурации сервера...");
-      var content = await File(configSource).readAsString();
-      
-      content = content.replaceAll(RegExp(r'dsn: ".*"'), 'dsn: "./data/local.db"');
-      
-      content = content.replaceAll(RegExp(r'port: \s*\d+'), 'port: 0');
-      
-      await File(configTarget).writeAsString(content);
+      if (!await File(configTarget).exists()) {
+        print("    [Config] Создание нового config.yaml...");
+        var content = await File(configSource).readAsString();        
+        content = content.replaceAll(RegExp(r'dsn: ".*"'), 'dsn: "./data/local.db"');
+        content = content.replaceAll(RegExp(r'driver: ".*"'), 'driver: "sqlite"');
+        
+        content = content.replaceAll(RegExp(r'port: \s*\d+'), 'port: 0');
+        
+        await File(configTarget).writeAsString(content);
+      } 
+      else {
+        print("    [Config] Обновление порта в существующем config.yaml...");
+        var currentContent = await File(configTarget).readAsString();
+        
+        final newContent = currentContent.replaceAll(RegExp(r'port: \s*\d+'), 'port: 0');        
+        if (currentContent != newContent) {
+          await File(configTarget).writeAsString(newContent);
+        }
+      }
     } else {
-      print("⚠️ Шаблон config.yaml не найден в ресурсах приложения!");
+      print("⚠️ Шаблон config.yaml не найден по пути: $configSource");
     }
   }
 
