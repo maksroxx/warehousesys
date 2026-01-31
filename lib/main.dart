@@ -1,7 +1,10 @@
 // ignore_for_file: avoid_print
 
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:warehousesys/core/config/app_config.dart';
 import 'package:warehousesys/core/services/server_manager.dart';
 import 'package:warehousesys/core/theme/app_theme.dart';
@@ -14,56 +17,81 @@ import 'package:warehousesys/l10n/app_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    print("🚀 Flutter: Инициализация сервера...");
-    final int port = await ServerManager.start();
-    print("✅ Flutter: Сервер успешно запущен на порту $port");
+  if (!kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+    await windowManager.ensureInitialized();
 
-    AppConfig.setPort(port);
+    const WindowOptions windowOptions = WindowOptions(
+      size: Size(1280, 800),
+      minimumSize: Size(1024, 768),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+    );
 
-    runApp(const ProviderScope(child: MyApp()));
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
-  } catch (e, stack) {
-    print("❌ Flutter: Критическая ошибка запуска: $e");
-    print(stack);
+  if (!kIsWeb) {
+    try {
+      print("🚀 Flutter Desktop: Инициализация сервера...");
+      final int port = await ServerManager.start();
+      print("✅ Flutter Desktop: Сервер успешно запущен на порту $port");
 
-    runApp(MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                const SizedBox(height: 24),
-                const Text(
-                  "Ошибка запуска системы",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      AppConfig.setPort(port);
+    } catch (e, stack) {
+      print("❌ Flutter: Критическая ошибка запуска: $e");
+      print(stack);
+      runApp(_buildErrorApp(e));
+      return;
+    }
+  } else {
+    print("🌐 Flutter Web: Сервер не запускается (используется Nginx proxy)");
+  }
+
+  runApp(const ProviderScope(child: MyApp()));
+}
+
+Widget _buildErrorApp(Object error) {
+  return MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 64),
+              const SizedBox(height: 24),
+              const Text(
+                "Ошибка запуска системы",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Text(
-                    e.toString(),
-                    style: const TextStyle(fontFamily: 'Courier', color: Colors.black87),
-                    textAlign: TextAlign.center,
-                  ),
+                child: Text(
+                  error.toString(),
+                  style: const TextStyle(fontFamily: 'Courier', color: Colors.black87),
+                  textAlign: TextAlign.center,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-    ));
-  }
+    ),
+  );
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -88,7 +116,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
+    if (!kIsWeb && state == AppLifecycleState.detached) {
       print("🛑 Flutter: Приложение закрывается, останавливаем сервер...");
       ServerManager.stop();
     }
@@ -100,16 +128,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
     return MaterialApp(
       scaffoldMessengerKey: rootScaffoldMessengerKey,
-      
       title: 'Warehouse Manager',
       debugShowCheckedModeBanner: false,
-      
       theme: buildAppTheme(),
-      
       locale: const Locale('ru'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      
       home: authState.isLoading
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : authState.isAuthenticated

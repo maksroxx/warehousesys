@@ -133,6 +133,7 @@ abstract class IStockRepository {
     String? password,
     String? dbname,
   });
+  Future<void> importProducts(File file);
 }
 
 class StockRepository implements IStockRepository {
@@ -838,6 +839,7 @@ class StockRepository implements IStockRepository {
     });
   }
 
+  @override
   Future<void> importProducts(File file) async {
     String fileName = file.path.split(Platform.pathSeparator).last;
     
